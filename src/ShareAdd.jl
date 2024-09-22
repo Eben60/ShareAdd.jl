@@ -1,19 +1,70 @@
 module ShareAdd
 using TOML
 
+is_minor_version(v1::VersionNumber, v2::VersionNumber) = 
+    v1.major == v2.major && v1.minor == v2.minor
+
+@kwdef struct EnvInfo
+    name
+    path
+    is_julia
+end
+
 function list_shared_environments(depot = first(DEPOT_PATH))
-    shared_environments = joinpath(depot, "environments")
-    if !isdir(shared_environments)
+    env_path = joinpath(depot, "environments")
+    j_env = nothing
+    shared_envs = EnvInfo[]
+
+    if !isdir(env_path)
         return String[]
     else
-        sh_envs = readdir(shared_environments)
-        return [s for s in sh_envs if isdir(joinpath(shared_environments, s))]
+        env_dirlist = readdir(env_path)
+        envs = [s for s in env_dirlist if isdir(joinpath(env_path, s))]
+        for env in envs
+            is_julia = false
+            v = tryparse(VersionNumber, env) 
+            if !isnothing(v) 
+                if is_minor_version(VERSION, v) 
+                    is_julia = true
+                else
+                    continue
+                end
+            end
+            envinfo = EnvInfo(; name = env, path = joinpath(env_path, env), is_julia)
+            push!(shared_envs, envinfo)
+        end
+
+        !isnothing(j_env) && push!(shared_envs, j_env)
+        return (; shared_envs, env_path)
     end
 end
 export list_shared_environments
 
-function env_path(env_name::AbstractString, depot = first(DEPOT_PATH))
-    env_name = env_name[2:end]
+
+function list_shared_packages(;depot = first(DEPOT_PATH))
+    (; shared_envs, ) = list_shared_environments(depot)
+    packages = Dict{String, Vector{EnvInfo}}()
+    for env in shared_envs
+        prs = shared_packages(env.name; depot, skipfirstchar = false)
+        for pr in prs
+            if !haskey(packages, pr)
+                packages[pr] = [env]
+            else
+                push!(packages[pr], env)
+            end
+        end
+    end
+    return packages
+end
+
+export list_shared_packages
+
+function version_number(s::AbstractString)
+    tryparse(VersionNumber, s)
+end
+
+function env_path(env_name::AbstractString, depot = first(DEPOT_PATH); skipfirstchar = true)
+    skipfirstchar && (env_name = env_name[2:end])
     return joinpath(depot, "environments", env_name) 
 end
 
@@ -37,22 +88,22 @@ Returns the list of all packages in the added environments as a `Vector{String}`
 ```julia-repl
 julia> sh_add("@StatPackages")
 3-element Vector{String}:
+ "Arrow"
  "CSV"
  "DataFrames"
- "Dates"
 
 julia> sh_add(["@StatPackages", "@Makie"])
 4-element Vector{String}:
+ "Arrow"
  "CSV"
  "DataFrames"
- "Dates"
  "Makie"
 
 julia> sh_add("@StatPackages", "@Makie")
 4-element Vector{String}:
+ "Arrow"
  "CSV"
  "DataFrames"
- "Dates"
  "Makie"
 ```
 """
@@ -74,8 +125,8 @@ sh_add(env_name::AbstractString, ARGS...; depot = first(DEPOT_PATH)) = sh_add(vc
 
 export sh_add
 
-function shared_packages(env_name; depot = first(DEPOT_PATH))
-    p = env_path(env_name, depot)
+function shared_packages(env_name; depot = first(DEPOT_PATH), skipfirstchar = true)
+    p = env_path(env_name, depot; skipfirstchar)
     project = TOML.parsefile(joinpath(p, "Project.toml"))
     return keys(project["deps"]) |> collect |> sort
 end

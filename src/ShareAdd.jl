@@ -7,7 +7,7 @@ is_minor_version(v1::VersionNumber, v2::VersionNumber) =
 @kwdef struct EnvInfo
     name
     path
-    is_julia
+    in_path
 end
 
 function list_shared_environments(depot = first(DEPOT_PATH))
@@ -21,16 +21,16 @@ function list_shared_environments(depot = first(DEPOT_PATH))
         env_dirlist = readdir(env_path)
         envs = [s for s in env_dirlist if isdir(joinpath(env_path, s))]
         for env in envs
-            is_julia = false
+            in_path = ("@$(env)" in LOAD_PATH)
             v = tryparse(VersionNumber, env) 
             if !isnothing(v) 
                 if is_minor_version(VERSION, v) 
-                    is_julia = true
+                    in_path = true
                 else
                     continue
                 end
             end
-            envinfo = EnvInfo(; name = env, path = joinpath(env_path, env), is_julia)
+            envinfo = EnvInfo(; name = env, path = joinpath(env_path, env), in_path)
             push!(shared_envs, envinfo)
         end
 
@@ -40,28 +40,38 @@ function list_shared_environments(depot = first(DEPOT_PATH))
 end
 export list_shared_environments
 
+@kwdef mutable struct PackageInfo
+    const name::String
+    const envs::Vector{EnvInfo}
+    in_path::Bool
+end
 
 function list_shared_packages(;depot = first(DEPOT_PATH))
     (; shared_envs, ) = list_shared_environments(depot)
-    packages = Dict{String, Vector{EnvInfo}}()
+    packages = Dict{String, PackageInfo}()
     for env in shared_envs
         prs = shared_packages(env.name; depot, skipfirstchar = false)
         for pr in prs
             if !haskey(packages, pr)
-                packages[pr] = [env]
+                p = PackageInfo(pr, [env], env.in_path)
+                p.in_path && empty!(p.envs) # if it is already in path, it doesn't matter which env it is
+                packages[pr] = p
             else
-                push!(packages[pr], env)
+                push!(packages[pr].envs, env)
+                packages[pr].in_path |= env.in_path
+                packages[pr].in_path && empty!(packages[pr].envs)
             end
         end
     end
+
+    # add packages in @stdlib
+    std_pcks = stdlib_packages()
+    for pk in std_pcks
+        packages[pk] = PackageInfo(pk, EnvInfo[], true)
+    end
     return packages
 end
-
 export list_shared_packages
-
-function version_number(s::AbstractString)
-    tryparse(VersionNumber, s)
-end
 
 function env_path(env_name::AbstractString, depot = first(DEPOT_PATH); skipfirstchar = true)
     skipfirstchar && (env_name = env_name[2:end])
@@ -130,5 +140,14 @@ function shared_packages(env_name; depot = first(DEPOT_PATH), skipfirstchar = tr
     project = TOML.parsefile(joinpath(p, "Project.toml"))
     return keys(project["deps"]) |> collect |> sort
 end
+export shared_packages
+
+# list packages in the standard environment @stdlib
+function stdlib_packages()
+    pkg_dirlist = readdir(Sys.STDLIB) 
+    pkgs = [s for s in pkg_dirlist if isdir(joinpath(Sys.STDLIB, s)) && !endswith(s, "_jll")]
+    return pkgs
+end
+export stdlib_packages
 
 end # module ShAdd

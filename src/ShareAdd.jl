@@ -13,10 +13,10 @@ is_minor_version(v1::VersionNumber, v2::VersionNumber) =
 - `in_path::Bool` - whether the environment is in `LOAD_PATH` 
 """
 @kwdef struct EnvInfo
-    name::String    
-    path::String
-    pkgs::Vector{String}
-    in_path::Bool
+    name::String = ""
+    path::String = ""
+    pkgs::Vector{String} = String[]
+    in_path::Bool = false
 end
 
 """
@@ -240,5 +240,7 @@ function is_in_registries(pkg_name)
     return false
 end
 export is_in_registries
+
+include("utils.jl")
 
 end # module ShAdd

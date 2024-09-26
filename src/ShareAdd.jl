@@ -1,25 +1,35 @@
 module ShareAdd
-using TOML
+using TOML, Pkg
 
 is_minor_version(v1::VersionNumber, v2::VersionNumber) = 
     v1.major == v2.major && v1.minor == v2.minor
 
+"""
+    struct EnvInfo
+
+- `name::String` - name of the environment
+- `path::String` - path of the environment's folder
+- `in_path::Bool` - whether the environment is in `LOAD_PATH` 
+"""
 @kwdef struct EnvInfo
-    name
-    path
-    in_path
+    name::String    
+    path::String
+    in_path::Bool
 end
 
-function list_shared_environments(depot = first(DEPOT_PATH))
-    env_path = joinpath(depot, "environments")
+"""
+    list_shared_environments(depot = first(DEPOT_PATH)) -> (shared_envs::Vector{EnvInfo}, env_path::String)
+"""
+function list_shared_environments(; depot = first(DEPOT_PATH))
+    envs_folder_path = joinpath(depot, "environments")
     j_env = nothing
     shared_envs = EnvInfo[]
 
-    if !isdir(env_path)
+    if !isdir(envs_folder_path)
         return String[]
     else
-        env_dirlist = readdir(env_path)
-        envs = [s for s in env_dirlist if isdir(joinpath(env_path, s))]
+        env_dirlist = readdir(envs_folder_path)
+        envs = [s for s in env_dirlist if isdir(joinpath(envs_folder_path, s))]
         for env in envs
             in_path = ("@$(env)" in LOAD_PATH)
             v = tryparse(VersionNumber, env) 
@@ -30,12 +40,13 @@ function list_shared_environments(depot = first(DEPOT_PATH))
                     continue
                 end
             end
-            envinfo = EnvInfo(; name = env, path = joinpath(env_path, env), in_path)
+            envinfo = EnvInfo(; name = env, path = joinpath(envs_folder_path, env), in_path)
             push!(shared_envs, envinfo)
         end
 
         !isnothing(j_env) && push!(shared_envs, j_env)
-        return (; shared_envs, env_path)
+        shared_env_names = [s.name for s in shared_envs]
+        return (; shared_envs, envs_folder_path, shared_env_names)
     end
 end
 export list_shared_environments
@@ -46,8 +57,11 @@ export list_shared_environments
     in_path::Bool
 end
 
-function list_shared_packages(;depot = first(DEPOT_PATH))
-    (; shared_envs, ) = list_shared_environments(depot)
+"""
+    list_shared_packages(;depot = first(DEPOT_PATH)) -> Dict{String, PackageInfo}
+"""
+function list_shared_packages(; depot = first(DEPOT_PATH))
+    (; shared_envs, ) = list_shared_environments(; depot)
     packages = Dict{String, PackageInfo}()
     for env in shared_envs
         prs = shared_packages(env.name; depot, skipfirstchar = false)
@@ -84,11 +98,10 @@ function is_shared_environment(env_name::AbstractString, depot = first(DEPOT_PAT
 end 
 export is_shared_environment
 
-
 """
-    sh_add(env_name::AbstractString; depot = first(DEPOT_PATH))
-    sh_add(env_names::AbstractVector{<:AbstractString}; depot = first(DEPOT_PATH))
-    sh_add(env_name::AbstractString, ARGS...; depot = first(DEPOT_PATH))
+    sh_add(env_name::AbstractString; depot = first(DEPOT_PATH)) -> Vector{String}
+    sh_add(env_names::AbstractVector{<:AbstractString}; depot = first(DEPOT_PATH)) -> Vector{String}
+    sh_add(env_name::AbstractString, ARGS...; depot = first(DEPOT_PATH)) -> Vector{String}
 
 Add shared environment(s) to `LOAD_PATH`, making the corresponding packages all available in the current session.
 
@@ -149,5 +162,75 @@ function stdlib_packages()
     return pkgs
 end
 export stdlib_packages
+
+function check_packages(packages; depot = first(DEPOT_PATH)) # packages::AbstractVector{<:AbstractString}
+    shared_pkgs = list_shared_packages(; depot)
+    (; curr_pkgs, curr_pr_name, is_shared) = current_env()
+
+    inpath_pkgs = String[]
+    inshared_pkgs = String[]
+    installable_pkgs = String[]
+    unavailable_pkgs = String[]
+
+    for pk in packages
+        if (pk in curr_pkgs) || (pk in curr_pkgs)
+            push!(inpath_pkgs, pk)
+        else
+            if pk in keys(shared_pkgs)
+                if shared_pkgs[pk].in_path 
+                    push!(inpath_pkgs, pk)
+                else
+                    push!(inshared_pkgs, pk)
+                end
+            elseif is_in_registries(pk)
+                push!(installable_pkgs, pk)
+            else
+                push!(unavailable_pkgs, pk)
+            end
+        end
+    end
+    return (; inpath_pkgs, inshared_pkgs, installable_pkgs, unavailable_pkgs, current_pr = (;name=curr_pr_name, shared=is_shared))
+end
+
+export check_packages
+
+function current_env(; depot = first(DEPOT_PATH))
+    pr = Base.active_project()
+    pkgs = keys(TOML.parsefile(pr)["deps"])
+    d = dirname(pr) |> basename
+    (base_name, extension) = splitext(d)
+
+    if (extension |> lowercase) == ".jl" 
+        curr_pr_name = base_name
+    else
+        curr_pr_name = d
+    end
+
+    is_shared = curr_pr_name in list_shared_environments(; depot).shared_env_names
+
+    return (; curr_pkgs=pkgs, curr_pr_name, is_shared)
+end
+export current_env
+
+function is_in_registry(pkname, reg=nothing)
+    isnothing(reg) && (reg = Pkg.Registry.reachable_registries()[1])
+    pkgs = reg.pkgs
+    for (_, pkg) in pkgs
+        pkg.name == pkname && return true
+    end
+    return false
+end
+export is_in_registry
+
+function is_in_registries(pkg_name)
+    registries = Pkg.Registry.reachable_registries() 
+    for reg in registries
+        if is_in_registry(pkg_name, reg)
+            return true
+        end
+    end
+    return false
+end
+export is_in_registries
 
 end # module ShAdd

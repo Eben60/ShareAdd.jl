@@ -9,11 +9,13 @@ is_minor_version(v1::VersionNumber, v2::VersionNumber) =
 
 - `name::String` - name of the environment
 - `path::String` - path of the environment's folder
+- `pkgs::Vector{String}` - list of packages in the environment
 - `in_path::Bool` - whether the environment is in `LOAD_PATH` 
 """
 @kwdef struct EnvInfo
     name::String    
     path::String
+    pkgs::Vector{String}
     in_path::Bool
 end
 
@@ -40,7 +42,9 @@ function list_shared_environments(; depot = first(DEPOT_PATH))
                     continue
                 end
             end
-            envinfo = EnvInfo(; name = env, path = joinpath(envs_folder_path, env), in_path)
+            path = joinpath(envs_folder_path, env)
+            pkgs = list_env_pkgs(path)
+            envinfo = EnvInfo(; name = env, path, pkgs, in_path)
             push!(shared_envs, envinfo)
         end
 
@@ -148,10 +152,14 @@ sh_add(env_name::AbstractString, ARGS...; depot = first(DEPOT_PATH)) = sh_add(vc
 
 export sh_add
 
+function list_env_pkgs(env_path) 
+    project = TOML.parsefile(joinpath(env_path, "Project.toml"))
+    return keys(project["deps"]) |> collect |> sort
+end
+
 function shared_packages(env_name; depot = first(DEPOT_PATH), skipfirstchar = true)
     p = env_path(env_name, depot; skipfirstchar)
-    project = TOML.parsefile(joinpath(p, "Project.toml"))
-    return keys(project["deps"]) |> collect |> sort
+    return list_env_pkgs(p)
 end
 export shared_packages
 

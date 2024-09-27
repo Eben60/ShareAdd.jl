@@ -5,7 +5,7 @@ is_minor_version(v1::VersionNumber, v2::VersionNumber) =
     v1.major == v2.major && v1.minor == v2.minor
 
 """
-    struct EnvInfo
+    mutable struct EnvInfo
 
 - `name::String` - name of the environment
 - `path::String` - path of the environment's folder
@@ -15,10 +15,11 @@ is_minor_version(v1::VersionNumber, v2::VersionNumber) =
 @kwdef mutable struct EnvInfo
     name::String = ""
     path::String = ""
-    pkgs::Vector{String} = String[]
+    pkgs::Set{String} = Set{String}()
     in_path::Bool = false
 end
 
+EnvInfo(name, path, pkgs::AbstractVector{<:AbstractString}, in_path) = EnvInfo(; name, path, pkgs = Set(pkgs), in_path)
 """
     list_shared_environments(depot = first(DEPOT_PATH)) -> (shared_envs::Vector{EnvInfo}, env_path::String)
 """

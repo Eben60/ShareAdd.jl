@@ -40,6 +40,8 @@ function rnd_pkgs_envs(; no_pks=6, total_pks=10, pks=make_pknames(total_pks), ma
 end
 export rnd_pkgs_envs
 
+set2vec(s) = collect(Set(s)) |> sort!
+
 function generate_envs(; total_pks=10, no_envs=10, uniquenames=true, shuffled=true)
     # create array of environments of size no_envs
     envs = EnvInfo[]
@@ -52,9 +54,8 @@ function generate_envs(; total_pks=10, no_envs=10, uniquenames=true, shuffled=tr
     end
 
     if uniquenames
-        sort!(envs; by=x -> x.pkgs)
+        sort!(envs; by=x -> set2vec(x.pkgs))
         for i in 2:lastindex(envs)
-            # println("renaming $(envs[i].name) to $(envs[i-1].name)")
             envs[i].pkgs == envs[i-1].pkgs && (envs[i].name = envs[i-1].name)
         end      
     end

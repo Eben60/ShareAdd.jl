@@ -12,7 +12,7 @@ is_minor_version(v1::VersionNumber, v2::VersionNumber) =
 - `pkgs::Vector{String}` - list of packages in the environment
 - `in_path::Bool` - whether the environment is in `LOAD_PATH` 
 """
-@kwdef struct EnvInfo
+@kwdef mutable struct EnvInfo
     name::String = ""
     path::String = ""
     pkgs::Vector{String} = String[]

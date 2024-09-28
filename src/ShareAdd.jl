@@ -1,25 +1,14 @@
 module ShareAdd
 using TOML, Pkg
 
+include("types.jl")
+include("optimset.jl")
+
 is_minor_version(v1::VersionNumber, v2::VersionNumber) = 
     v1.major == v2.major && v1.minor == v2.minor
 
-"""
-    mutable struct EnvInfo
-
-- `name::String` - name of the environment
-- `path::String` - path of the environment's folder
-- `pkgs::Vector{String}` - list of packages in the environment
-- `in_path::Bool` - whether the environment is in `LOAD_PATH` 
-"""
-@kwdef mutable struct EnvInfo
-    name::String = ""
-    path::String = ""
-    pkgs::Set{String} = Set{String}()
-    in_path::Bool = false
-end
-
 EnvInfo(name, path, pkgs::AbstractVector{<:AbstractString}, in_path) = EnvInfo(; name, path, pkgs = Set(pkgs), in_path)
+
 """
     list_shared_environments(depot = first(DEPOT_PATH)) -> (shared_envs::Vector{EnvInfo}, env_path::String)
 """
@@ -55,12 +44,6 @@ function list_shared_environments(; depot = first(DEPOT_PATH))
     end
 end
 export list_shared_environments
-
-@kwdef mutable struct PackageInfo
-    const name::String
-    const envs::Vector{EnvInfo}
-    in_path::Bool
-end
 
 """
     list_shared_packages(;depot = first(DEPOT_PATH)) -> Dict{String, PackageInfo}
@@ -245,3 +228,22 @@ export is_in_registries
 include("utils.jl")
 
 end # module ShAdd
+
+
+# function env_combinations(pkgs::Vector[PackageInfo], 
+#     former_extra_pks=Set{String}(), 
+#     max_lng = 0,
+#     required_pkgs=nothing,
+#     env_sets)
+
+#     isnothing(required_pkgs) && (required_pkgs = Set([p.name for p in pkgs]))
+#     envs = pkgs[1].envs
+#     for env in envs
+#         (; newset, newlng) = extraneous_pkgs(former_extra_pks, env, required_pkgs)
+#         newlng > max_lng && return nothing
+
+#     end
+
+#     # if length(pkgs) == 1
+
+# end

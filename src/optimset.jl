@@ -34,7 +34,9 @@ function check_and_push!(optimset::OptimSet, env_set::EnvSet)
         push!(optimset.env_sets, env_set)
     end
 end
-check_and_push!
+
+check_and_push!(optimset::OptimSet, env_sets::T) where T <: Union{AbstractArray{EnvSet}, AbstractSet{EnvSet}} = check_and_push!.(Ref(optimset), env_sets)
+
 
 function optim_set(pkgs::AbstractArray{PackageInfo})
     optimset = OptimSet()
@@ -44,7 +46,7 @@ function optim_set(pkgs::AbstractArray{PackageInfo})
 
     for env_combination in Iterators.product(env_sets...)
         # return env_combination 
-        envset = env_set(collect(env_combination), required_pkgs)
+        envset = Set([env_set(collect(env_combination), required_pkgs)])
         check_and_push!(optimset, envset)        
     end
     return optimset

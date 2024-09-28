@@ -24,9 +24,11 @@ struct EnvSet
     envs::Set{String}
     extraneous_pks::Set{String}
     extra_lng::Int
+    no_of_sets::Int
 end
 
-@kwdef mutable struct OptimSet
-    env_sets::Vector{EnvSet} = EnvSet[]
-    extra_lng::Int = typemax(Int)
+mutable struct OptimSet
+    best_set::EnvSet
+    extra_lng::Int
+    no_of_sets::Int
 end

@@ -13,33 +13,44 @@ function extraneous_pkgs(former_extra_pks, env::EnvInfo, required_pkgs)
 end
 export extraneous_pkgs
 
-function env_set(envs::AbstractArray{EnvInfo}, required_pkgs)
+function env_set(envs::T, required_pkgs) where T <: Union{AbstractArray{EnvInfo}, AbstractSet{EnvInfo}}
     pkgs = reducesets(envs)
     extraneous_pks = setdiff(pkgs, required_pkgs)
     lng = length(extraneous_pks)
     nms = reducenames(envs)
-    return EnvSet(nms, extraneous_pks, lng)
+    no_of_sets = length(nms)
+    return EnvSet(nms, extraneous_pks, lng, no_of_sets)
 end
 export env_set
+
+function replace!(optimset::OptimSet, env_set::EnvSet)
+    optimset.best_set = env_set
+    optimset.extra_lng = env_set.extra_lng
+    optimset.no_of_sets = env_set.no_of_sets
+    return optimset
+end
 
 function check_and_push!(optimset::OptimSet, env_set::EnvSet)
     if env_set.extra_lng > optimset.extra_lng
         return optimset
     elseif env_set.extra_lng < optimset.extra_lng 
-        empty!(optimset.env_sets)
-        push!(optimset.env_sets, env_set)
-        optimset.extra_lng = env_set.extra_lng
-        return optimset
+        return replace!(optimset, env_set)
+    elseif env_set.no_of_sets < optimset.no_of_sets
+        return replace!(optimset, env_set)
     else
-        push!(optimset.env_sets, env_set)
+        return optimset
     end
 end
 
-check_and_push!(optimset::OptimSet, env_sets::T) where T <: Union{AbstractArray{EnvSet}, AbstractSet{EnvSet}} = check_and_push!.(Ref(optimset), env_sets)
-
+check_and_push!(optimset::OptimSet, env_sets::T) where T <: Union{AbstractArray{EnvSet}, AbstractSet{EnvSet}} = 
+    check_and_push!.(Ref(optimset), env_sets)
 
 function optim_set(pkgs::AbstractArray{PackageInfo})
-    optimset = OptimSet()
+    required_pkgs = [p.name for p in pkgs]
+    envs = Set(vcat((p.envs for p in pkgs)...))
+    envset = env_set(envs, required_pkgs)
+    optimset = OptimSet(envset, envset.extra_lng, envset.no_of_sets)
+
     env_sets = Tuple([p.envs for p in pkgs])
     required_pkgs = [p.name for p in pkgs]
     # return env_sets

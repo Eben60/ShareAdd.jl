@@ -71,4 +71,19 @@ function optim_set(pkgs::AbstractArray{PackageInfo})
 end
 export optim_set
 
-# function 
+function sortpkgs!(pkgs::AbstractVector{PackageInfo})
+    sort!(pkgs; by=x -> length(x.envs), rev=true)
+end
+
+function remove_redundant_envs!(pkgs::AbstractVector{PackageInfo})
+    sortpkgs!(pkgs)
+    l = length(pkgs)
+    for i in 2:l
+        sortpkgs!(view(pkgs, i:l))
+        for j in 1:(i-1)
+            pkgs[i].envs = setdiff(pkgs[i].envs, pkgs[j].envs)
+        end
+    end
+    return pkgs
+end
+export remove_redundant_envs!

@@ -18,7 +18,7 @@ Base.:(==)(a::EnvInfo, b::EnvInfo) = a.name == b.name
 # @kwdef 
 mutable struct PackageInfo
     const name::String
-    const envs::Vector{EnvInfo}
+    envs::Vector{EnvInfo}
     in_path::Bool
 end
 

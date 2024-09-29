@@ -13,6 +13,8 @@
     in_path::Bool = false
 end
 
+Base.:(==)(a::EnvInfo, b::EnvInfo) = a.name == b.name
+
 # @kwdef 
 mutable struct PackageInfo
     const name::String

@@ -45,11 +45,16 @@ end
 check_and_push!(optimset::OptimSet, env_sets::T) where T <: Union{AbstractArray{EnvSet}, AbstractSet{EnvSet}} = 
     check_and_push!.(Ref(optimset), env_sets)
 
-function optim_set(pkgs::AbstractArray{PackageInfo})
+
+function init_optimset(pkgs::AbstractArray{PackageInfo})
     required_pkgs = [p.name for p in pkgs]
     envs = Set(vcat((p.envs for p in pkgs)...))
     envset = env_set(envs, required_pkgs)
-    optimset = OptimSet(envset, envset.extra_lng, envset.no_of_sets)
+    return OptimSet(envset, envset.extra_lng, envset.no_of_sets)
+end
+
+function optim_set(pkgs::AbstractArray{PackageInfo})
+    optimset = init_optimset(pkgs)
 
     env_sets = Tuple([p.envs for p in pkgs])
     required_pkgs = [p.name for p in pkgs]

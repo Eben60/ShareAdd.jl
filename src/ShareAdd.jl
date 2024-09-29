@@ -3,6 +3,7 @@ using TOML, Pkg
 
 include("types.jl")
 include("optimset.jl")
+include("optimset2.jl")
 
 is_minor_version(v1::VersionNumber, v2::VersionNumber) = 
     v1.major == v2.major && v1.minor == v2.minor

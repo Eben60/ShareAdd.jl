@@ -61,9 +61,11 @@ function optim_set(pkgs::AbstractArray{PackageInfo})
     # return env_sets
 
     for env_combination in Iterators.product(env_sets...)
-        # return env_combination 
-        envset = Set([env_set(collect(env_combination), required_pkgs)])
-        check_and_push!(optimset, envset)        
+        envset = Set(collect(env_combination)) 
+        # envset = Set([env_set(collect(env_combination), required_pkgs)])
+        # return envset
+        recurse_sets!(optimset, envset, required_pkgs)
+        # check_and_push!(optimset, envset)        
     end
     return optimset
 end

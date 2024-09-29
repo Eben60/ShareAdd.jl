@@ -1,6 +1,11 @@
 recurse_sets!(optimset::OptimSet, envinfos::Set{EnvInfo}, required_pkgs) = 
     recurse_sets!(optimset, collect(envinfos), required_pkgs) 
 
+function recurse_sets!(optimset::OptimSet,  envsets::Set{EnvSet}, required_pkgs)
+    
+
+end
+
 function recurse_sets!(optimset::OptimSet, envinfos::Vector{EnvInfo}, required_pkgs)
     redset = reducesets(envinfos)
     if !issubset(required_pkgs, redset)

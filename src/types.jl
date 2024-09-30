@@ -15,7 +15,6 @@ end
 
 Base.:(==)(a::EnvInfo, b::EnvInfo) = a.name == b.name
 
-# @kwdef 
 mutable struct PackageInfo
     const name::String
     envs::Vector{EnvInfo}
@@ -31,6 +30,4 @@ end
 
 mutable struct OptimSet
     best_set::EnvSet
-    extra_lng::Int
-    no_of_sets::Int
 end

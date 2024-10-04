@@ -13,6 +13,7 @@
     in_path::Bool = false
 end
 
+EnvInfo(name, path, pkgs::AbstractVector{<:AbstractString}, in_path) = EnvInfo(; name, path, pkgs = Set(pkgs), in_path)
 Base.:(==)(a::EnvInfo, b::EnvInfo) = a.name == b.name
 
 mutable struct PackageInfo

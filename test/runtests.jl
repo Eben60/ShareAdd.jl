@@ -1,8 +1,7 @@
 using Test
 using ShareAdd
 
-using ShareAdd: PackageInfo, EnvInfo, OptimSet, EnvSet, 
-    init_optimset, optim_set, remove_redundant_envs!
+using ShareAdd: PackageInfo, EnvInfo, OptimSet, EnvSet
 
 @testset "optimset" begin
     @testset "env_set" begin

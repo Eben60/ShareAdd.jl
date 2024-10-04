@@ -8,8 +8,6 @@ include("optimset.jl")
 is_minor_version(v1::VersionNumber, v2::VersionNumber) = 
     v1.major == v2.major && v1.minor == v2.minor
 
-EnvInfo(name, path, pkgs::AbstractVector{<:AbstractString}, in_path) = EnvInfo(; name, path, pkgs = Set(pkgs), in_path)
-
 """
     list_shared_environments(depot = first(DEPOT_PATH)) -> (shared_envs::Vector{EnvInfo}, env_path::String)
 """
@@ -226,7 +224,7 @@ function is_in_registries(pkg_name)
 end
 export is_in_registries
 
-include("utils.jl")
+# include("utils.jl")
 
 end # module ShAdd
 

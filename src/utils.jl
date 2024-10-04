@@ -1,4 +1,8 @@
+using ShareAdd
+using ShareAdd: PackageInfo, EnvInfo, OptimSet, EnvSet
+
 using Random
+sh_add("@StatsBase")
 using StatsBase
 
 function rnd_p_sample(pks, max_size; musthave=nothing)

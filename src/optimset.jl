@@ -75,7 +75,7 @@ function optim_set(pkgs::AbstractArray{PackageInfo})
         envset = Set(collect(env_combination)) 
         recurse_sets!(optimset, envset, required_pkgs)      
     end
-    return optimset
+    return optimset.best_set
 end
 
 optim_set(pks::AbstractArray{<:AbstractString}, envs::AbstractVector{EnvInfo}) = optim_set(make_pkginfos(pks, envs))

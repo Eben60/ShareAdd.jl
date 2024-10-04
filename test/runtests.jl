@@ -41,8 +41,8 @@ using ShareAdd: PackageInfo, EnvInfo, OptimSet, EnvSet
                     EnvInfo("env4", "", Set(["P2", "P3"]), false)], false),
                 PackageInfo("P3", [EnvInfo("env3", "", Set(["P3"]), false)], false)]
         optimset = ShareAdd.optim_set(pkgs)
-        @test optimset.best_set.extra_lng == 0
-        @test optimset.best_set.no_of_sets == 2
+        @test optimset.extra_lng == 0
+        @test optimset.no_of_sets == 2
     end
 
     @testset "remove_redundant_envs!" begin
@@ -54,4 +54,26 @@ using ShareAdd: PackageInfo, EnvInfo, OptimSet, EnvSet
         @test length(result[2].envs) == 1
         @test length(result[3].envs) == 1
     end
+end
+
+@testset "registries" begin
+    @test is_in_registries("Unitful")
+    @test ! is_in_registries("NO_Ssuch_NOnssensse")   
+end
+
+@testset "current_env" begin
+    ce = current_env()
+    @test ce.is_shared == false
+    @test Set(ce.curr_pkgs) == Set(["Coverage", "Test", "Aqua", "Suppressor", "TOML", "ShareAdd"])
+end
+
+@testset "check_packages" begin
+    cp = check_packages(["Coverage", "Test", "Aqua", "Suppressor", "TOML", "ShareAdd", "Base64", "NO_Ssuch_NOnssensse", "Zalgo"])
+    @test Set(cp.inpath_pkgs) == Set(["Coverage", "Test", "Aqua", "Suppressor", "TOML", "ShareAdd", "Base64"])
+    @test cp.inshared_pkgs == []
+    @test cp.installable_pkgs == ["Zalgo"]
+    @test cp.unavailable_pkgs == ["NO_Ssuch_NOnssensse"]
+    cp1 = check_packages(["Test",])
+    @test cp1.inpath_pkgs == ["Test"]
+
 end

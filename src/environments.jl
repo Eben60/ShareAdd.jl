@@ -172,7 +172,7 @@ Returns a NamedTuple with the following fields:
 """
 function check_packages(packages; depot = first(DEPOT_PATH)) # packages::AbstractVector{<:AbstractString}
     shared_pkgs = list_shared_packages(; depot)
-    (; curr_pkgs, curr_pr_name, is_shared) = current_env()
+    current_pr = current_env()
 
     inpath_pkgs = String[]
     inshared_pkgs = String[]
@@ -180,7 +180,7 @@ function check_packages(packages; depot = first(DEPOT_PATH)) # packages::Abstrac
     unavailable_pkgs = String[]
 
     for pk in packages
-        if (pk in curr_pkgs) || (pk in curr_pkgs)
+        if (pk in current_pr.pkgs)
             push!(inpath_pkgs, pk)
         else
             if pk in keys(shared_pkgs)
@@ -196,7 +196,7 @@ function check_packages(packages; depot = first(DEPOT_PATH)) # packages::Abstrac
             end
         end
     end
-    return (; inpath_pkgs, inshared_pkgs, installable_pkgs, unavailable_pkgs, shared_pkgs, current_pr = (;name=curr_pr_name, shared=is_shared))
+    return (; inpath_pkgs, inshared_pkgs, installable_pkgs, unavailable_pkgs, shared_pkgs, current_pr)
 end
 
 check_packages(package::AbstractString; depot = first(DEPOT_PATH)) = check_packages([package]; depot) 
@@ -267,8 +267,8 @@ function make_importable(packages)
     (; inshared_pkgs, installable_pkgs, unavailable_pkgs, shared_pkgs, current_pr) = check_packages(packages)
     isempty(unavailable_pkgs) || error("The following packages are not available from any registry: $unavailable_pkgs")
 
-    if isempty(installable_pkgs) 
-        p2i = prompt2install(installable_pkgs, current_pr)
+    if !isempty(installable_pkgs) 
+        p2i = prompt2install(installable_pkgs, )
 
         isnothing(p2i) && return nothing
 
@@ -289,15 +289,7 @@ function make_importable(packages)
 end
 export make_importable
 
-function prompt2install(packages::AbstractVector{<:AbstractString}, current_pr)
-    to_install = []
-    for p in packages
-        e = prompt2install(p)
-        isnothing(e) && return nothing
-        push!(to_install, (; pkg=p, env=e))
-    end
-    return to_install
-end
+install_shared(x) = println(x)
 
 env_prefix(env) = (env.shared && ! env.standard_env) ? "@" : ""
 
@@ -319,7 +311,17 @@ function prompt4newenv(new_package)
     return answer
 end
 
-function prompt2install(new_package, envs = list_shared_environments().shared_envs)
+function prompt2install(packages::AbstractVector{<:AbstractString})
+    to_install = []
+    for p in packages
+        e = prompt2install(p)
+        isnothing(e) && return nothing
+        push!(to_install, (; pkg=p, env=e))
+    end
+    return to_install
+end
+
+function prompt2install(new_package::AbstractString; envs = list_shared_environments().shared_envs)
     currproj = current_env()
     currproj.shared || push!(envs, currproj)
 
@@ -329,11 +331,11 @@ function prompt2install(new_package, envs = list_shared_environments().shared_en
     menu = RadioMenu(options)
 
     println("Use the arrow keys to move the cursor. Press Enter to select.")
-    println("Please select a shared environment to copy to install package $new_package")
+    println("Please select a shared environment to install package $new_package")
 
     menu_idx = request(menu)
 
-    if menu_idx == length(options)
+    if (menu_idx == length(options)) || menu_idx <= 0
         @info "Quiting. No action taken."
         return nothing
     elseif menu_idx == length(options) - 1
@@ -345,7 +347,6 @@ end
 
 export prompt2install
 
-
 function reset_loadpath!()
     default_paths = ["@", "@v#.#", "@stdlib"]
     empty!(LOAD_PATH)
@@ -353,3 +354,17 @@ function reset_loadpath!()
     return nothing  
 end
 export reset_loadpath!
+
+delete_shared_env(e::EnvInfo) = rm(e.path; recursive=true)
+
+function delete_shared_env(s::AbstractString)
+    startswith(s, "@") || error("Name of shared environment must start with @")
+    s = s[2:end]
+
+    for env in list_shared_environments().shared_envs
+        env.name == s && return delete_shared_env(env)
+    end
+
+    error("Shared environment $s not found")
+end
+export delete_shared_env

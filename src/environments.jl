@@ -272,3 +272,11 @@ function prompt2install(package::AbstractString, current_pr)
     @show package
 
 end
+
+function reset_loadpath!()
+    default_paths = ["@", "@v#.#", "@stdlib"]
+    empty!(LOAD_PATH)
+    append!(LOAD_PATH, default_paths)
+    return nothing  
+end
+export reset_loadpath!

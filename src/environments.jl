@@ -204,9 +204,15 @@ check_packages(package::AbstractString; depot = first(DEPOT_PATH)) = check_packa
 export check_packages
 
 function current_env(; depot = first(DEPOT_PATH))
+    shared_envs = list_shared_environments(; depot)
+
+    shared_env_paths = [env.path for env in shared_envs.shared_envs]
+
+
     pr = Base.active_project()
     pkgs = keys(TOML.parsefile(pr)["deps"])
-    d = dirname(pr) |> basename
+    curr_pr_path = dirname(pr)
+    d = curr_pr_path |> basename
     (base_name, extension) = splitext(d)
 
     if (extension |> lowercase) == ".jl" 
@@ -215,9 +221,20 @@ function current_env(; depot = first(DEPOT_PATH))
         curr_pr_name = d
     end
 
-    is_shared = curr_pr_name in list_shared_environments(; depot).shared_env_names
+    is_shared = curr_pr_path in shared_env_paths
 
-    return (; curr_pkgs=pkgs, curr_pr_name, is_shared)
+    if is_shared
+        for e in shared_envs.shared_envs
+            if e.path == curr_pr_path
+                env = copy(e)
+                env.active_project = true
+                return env
+            end
+        end
+    else
+        return EnvInfo(; name=curr_pr_name, pkgs, path=curr_pr_path, in_path=true, shared=false, active_project=true)
+    end
+    error("This code section should never be executed")    
 end
 export current_env
 
@@ -242,12 +259,21 @@ function is_in_registries(pkg_name)
 end
 export is_in_registries
 
+
+"""
+    make_importable(packages) -> :success | nothing
+"""
 function make_importable(packages)
     (; inshared_pkgs, installable_pkgs, unavailable_pkgs, shared_pkgs, current_pr) = check_packages(packages)
     isempty(unavailable_pkgs) || error("The following packages are not available from any registry: $unavailable_pkgs")
 
     if isempty(installable_pkgs) 
-        prompt2install(installable_pkgs, current_pr)
+        p2i = prompt2install(installable_pkgs, current_pr)
+
+        isnothing(p2i) && return nothing
+
+        install_shared.(p2i) # TODO
+
         (; inshared_pkgs, installable_pkgs, unavailable_pkgs, current_pr) = check_packages(packages)
         isempty(unavailable_pkgs) || error("The following packages are not available from any registry: $unavailable_pkgs")
         isempty(installable_pkgs) || error("The following packages should have been installed by now: $installable_pkgs")
@@ -259,61 +285,65 @@ function make_importable(packages)
         sh_add(envs2add)
     end
 
-    return nothing
+    return :success
 end
 export make_importable
 
 function prompt2install(packages::AbstractVector{<:AbstractString}, current_pr)
+    to_install = []
     for p in packages
-        prompt2install(p, current_pr)
+        e = prompt2install(p)
+        isnothing(e) && return nothing
+        push!(to_install, (; pkg=p, env=e))
     end
-    return nothing
-end
-
-function prompt2install(package::AbstractString, current_pr)
-    @show package
-
+    return to_install
 end
 
 env_prefix(env) = (env.shared && ! env.standard_env) ? "@" : ""
 
 function env_suffix(env)
+    #TODO current, active, temporary, and all corbner cases
     env.standard_env && return " (standard Jula environment)"
     env.active_project && return " (current active project)"
     return ""
 end
 
-function select_env(envs = list_shared_environments().shared_envs)
-    list2show = [env_prefix(env) * env.name * env_suffix(env) for env in envs]
-    
+env_info2show(env) = env_prefix(env) * env.name * env_suffix(env)
 
+function prompt4newenv(new_package)
+    print("Please enter a name for the new shared environment, \nor press Enter to accept @$new_package: ")
+    answer = readline(stdin)
+    answer = strip(answer)
+    isempty(answer) && (answer = "@$new_package")
+    startswith(answer, "@") || (answer = "@" * answer)
+    return answer
 end
 
-export select_env
+function prompt2install(new_package, envs = list_shared_environments().shared_envs)
+    currproj = current_env()
+    currproj.shared || push!(envs, currproj)
 
-function select_shared_environments(depot = first(DEPOT_PATH))
-    envs = list_shared_environments()
-    options = copy(envs)
-    for idx in eachindex(options)
-        if options[idx] == "v$(VERSION.major).$(VERSION.minor)"
-            options[idx] = options[idx] * "(current version)"
-        end
-    end
-    push!(options, "Backup the current environment: $(Base.active_project()).")
+    options = [env_info2show(env) for env in envs]
+    push!(options, "A new shared environment (you will be prompted for the name)")
     push!(options, "Quit. Do Nothing.")
     menu = RadioMenu(options)
-    println("Use the arrow keys to move the cursor. Press enter to select.")
-    println("Please select a shared environment to copy to $(Base.active_project()):")
+
+    println("Use the arrow keys to move the cursor. Press Enter to select.")
+    println("Please select a shared environment to copy to install package $new_package")
+
     menu_idx = request(menu)
-    if menu_idx <= length(envs)
-        return joinpath(depot, "environments", envs[menu_idx])
-    elseif menu_idx == length(envs) + 1
-        return Base.active_project()
-    elseif menu_idx == length(options)
+
+    if menu_idx == length(options)
         @info "Quiting. No action taken."
-        return ""
+        return nothing
+    elseif menu_idx == length(options) - 1
+        return prompt4newenv(new_package)
+    else
+        return envs[menu_idx]
     end
 end
+
+export prompt2install
 
 
 function reset_loadpath!()

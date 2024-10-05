@@ -272,9 +272,11 @@ function make_importable(packages)
 
         isnothing(p2i) && return nothing
 
-        install_shared.(p2i) # TODO
+        @show p2i
 
-        (; inshared_pkgs, installable_pkgs, unavailable_pkgs, current_pr) = check_packages(packages)
+        install_shared(p2i, current_pr) 
+
+        (; inshared_pkgs, installable_pkgs, unavailable_pkgs, shared_pkgs, current_pr) = check_packages(packages)
         isempty(unavailable_pkgs) || error("The following packages are not available from any registry: $unavailable_pkgs")
         isempty(installable_pkgs) || error("The following packages should have been installed by now: $installable_pkgs")
     end
@@ -289,12 +291,53 @@ function make_importable(packages)
 end
 export make_importable
 
-install_shared(x) = println(x)
+function install_shared(p2is::AbstractVector, current_pr)  
+    for p2i in p2is
+        install_shared(p2i)
+    end
+    Pkg.activate(current_pr.path)
+    return nothing
+end
+
+function install_shared(p2i::NamedTuple)
+    p = p2i.pkg
+    env = p2i.env
+
+    if env isa EnvInfo
+        if env.standard_env
+            env2activate = ""
+        elseif env.shared
+            env2activate = "@" * env.name
+        else
+            env2activate = env.path
+        end
+    else
+        env2activate = env
+    end
+
+    @show env2activate
+
+    if isempty(env2activate) 
+        Pkg.activate()
+    else
+        if startswith(env2activate, "@")
+            shared = true
+            env2activate = env2activate[2:end]
+        else
+            shared = false
+        end
+        Pkg.activate(env2activate; shared)
+    end
+
+    Pkg.add(p)
+
+    return nothing
+end
 
 env_prefix(env) = (env.shared && ! env.standard_env) ? "@" : ""
 
 function env_suffix(env)
-    #TODO current, active, temporary, and all corbner cases
+    #TODO current, active, temporary, and all corner cases
     env.standard_env && return " (standard Jula environment)"
     env.active_project && return " (current active project)"
     return ""

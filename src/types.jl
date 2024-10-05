@@ -19,6 +19,7 @@ end
 
 EnvInfo(name, path, pkgs::AbstractVector{<:AbstractString}, in_path) = EnvInfo(; name, path, pkgs = Set(pkgs), in_path)
 Base.:(==)(a::EnvInfo, b::EnvInfo) = a.name == b.name
+Base.:copy(e::EnvInfo) = EnvInfo(e.name, e.path, copy(e.pkgs), e.in_path, e.standard_env, e.shared, e.temporary, e.active_project)
 
 mutable struct PackageInfo
     const name::String

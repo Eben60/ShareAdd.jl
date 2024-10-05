@@ -11,6 +11,10 @@
     path::String = ""
     pkgs::Set{String} = Set{String}()
     in_path::Bool = false
+    standard_env::Bool = false
+    shared::Bool = true
+    temporary::Bool = false
+    active_project::Bool = false
 end
 
 EnvInfo(name, path, pkgs::AbstractVector{<:AbstractString}, in_path) = EnvInfo(; name, path, pkgs = Set(pkgs), in_path)

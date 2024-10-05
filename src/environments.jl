@@ -16,18 +16,20 @@ function list_shared_environments(; depot = first(DEPOT_PATH))
         env_dirlist = readdir(envs_folder_path)
         envs = [s for s in env_dirlist if isdir(joinpath(envs_folder_path, s))]
         for env in envs
+            standard_env = false
             in_path = ("@$(env)" in LOAD_PATH)
             v = tryparse(VersionNumber, env) 
             if !isnothing(v) 
                 if is_minor_version(VERSION, v) 
                     in_path = true
+                    standard_env = true
                 else
                     continue
                 end
             end
             path = joinpath(envs_folder_path, env)
-            pkgs = list_env_pkgs(path)
-            envinfo = EnvInfo(; name = env, path, pkgs, in_path)
+            pkgs = list_env_pkgs(path) |> Set
+            envinfo = EnvInfo(; name = env, path, pkgs, in_path, standard_env, shared = true, temporary = false, active_project = false)
             push!(shared_envs, envinfo)
         end
 
@@ -272,6 +274,47 @@ function prompt2install(package::AbstractString, current_pr)
     @show package
 
 end
+
+env_prefix(env) = (env.shared && ! env.standard_env) ? "@" : ""
+
+function env_suffix(env)
+    env.standard_env && return " (standard Jula environment)"
+    env.active_project && return " (current active project)"
+    return ""
+end
+
+function select_env(envs = list_shared_environments().shared_envs)
+    list2show = [env_prefix(env) * env.name * env_suffix(env) for env in envs]
+    
+
+end
+
+export select_env
+
+function select_shared_environments(depot = first(DEPOT_PATH))
+    envs = list_shared_environments()
+    options = copy(envs)
+    for idx in eachindex(options)
+        if options[idx] == "v$(VERSION.major).$(VERSION.minor)"
+            options[idx] = options[idx] * "(current version)"
+        end
+    end
+    push!(options, "Backup the current environment: $(Base.active_project()).")
+    push!(options, "Quit. Do Nothing.")
+    menu = RadioMenu(options)
+    println("Use the arrow keys to move the cursor. Press enter to select.")
+    println("Please select a shared environment to copy to $(Base.active_project()):")
+    menu_idx = request(menu)
+    if menu_idx <= length(envs)
+        return joinpath(depot, "environments", envs[menu_idx])
+    elseif menu_idx == length(envs) + 1
+        return Base.active_project()
+    elseif menu_idx == length(options)
+        @info "Quiting. No action taken."
+        return ""
+    end
+end
+
 
 function reset_loadpath!()
     default_paths = ["@", "@v#.#", "@stdlib"]

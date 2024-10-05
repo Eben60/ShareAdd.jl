@@ -6,17 +6,17 @@ using ShareAdd: PackageInfo, EnvInfo, OptimSet, EnvSet
 @testset "optimset" begin
     @testset "env_set" begin
         required_pkgs = ["P1", "P2", "P3"]
-        envs = [EnvInfo("env1", "", Set(["P1", "P2"]), false),
-                EnvInfo("env2", "", Set(["P2", "P3", "P4"]), false)]
+        envs = [EnvInfo("env1", "", Set(["P1", "P2"]), false, false, true, false, false),
+                EnvInfo("env2", "", Set(["P2", "P3", "P4"]), false, false, true, false, false)]
         envset = ShareAdd.env_set(envs, required_pkgs)
         @test envset.extra_lng == 1
         @test envset.no_of_sets == 2
     end
 
     @testset "init_optimset" begin
-        pkgs = [PackageInfo("P1", [EnvInfo("env1", "", Set(["P1", "P2"]), false)], false),
-                PackageInfo("P2", [EnvInfo("env2", "", Set(["P2", "P3"]), false)], false),
-                PackageInfo("P3", [EnvInfo("env3", "", Set(["P3"]), false)], false)]
+        pkgs = [PackageInfo("P1", [EnvInfo("env1", "", Set(["P1", "P2"]), false, false, true, false, false)], false),
+                PackageInfo("P2", [EnvInfo("env2", "", Set(["P2", "P3"]), false, false, true, false, false)], false),
+                PackageInfo("P3", [EnvInfo("env3", "", Set(["P3"]), false, false, true, false, false)], false)]
         optimset = ShareAdd.init_optimset(pkgs)
         @test optimset.best_set.extra_lng == 0
         @test optimset.best_set.no_of_sets == 3
@@ -24,9 +24,9 @@ using ShareAdd: PackageInfo, EnvInfo, OptimSet, EnvSet
 
     @testset "recurse_sets!" begin
         required_pkgs = ["P1", "P2", "P3"]
-        envinfos = [EnvInfo("env1", "", Set(["P1", "P2"]), false),
-                    EnvInfo("env2", "", Set(["P2", "P3"]), false),
-                    EnvInfo("env3", "", Set(["P3"]), false)]
+        envinfos = [EnvInfo("env1", "", Set(["P1", "P2"]), false, false, true, false, false),
+                    EnvInfo("env2", "", Set(["P2", "P3"]), false, false, true, false, false),
+                    EnvInfo("env3", "", Set(["P3"]), false, false, true, false, false)]
         optimset = ShareAdd.init_optimset([PackageInfo("P1", envinfos, false),
                                           PackageInfo("P2", envinfos, false),
                                           PackageInfo("P3", envinfos, false)])
@@ -36,19 +36,19 @@ using ShareAdd: PackageInfo, EnvInfo, OptimSet, EnvSet
     end
 
     @testset "optim_set" begin
-        pkgs = [PackageInfo("P1", [EnvInfo("env1", "", Set(["P1", "P2"]), false)], false),
-                PackageInfo("P2", [EnvInfo("env2", "", Set(["P2", "P4"]), false), 
-                    EnvInfo("env4", "", Set(["P2", "P3"]), false)], false),
-                PackageInfo("P3", [EnvInfo("env3", "", Set(["P3"]), false)], false)]
+        pkgs = [PackageInfo("P1", [EnvInfo("env1", "", Set(["P1", "P2"]), false, false, true, false, false)], false),
+                PackageInfo("P2", [EnvInfo("env2", "", Set(["P2", "P4"]), false, false, true, false, false), 
+                    EnvInfo("env4", "", Set(["P2", "P3"]), false, false, true, false, false)], false),
+                PackageInfo("P3", [EnvInfo("env3", "", Set(["P3"]), false, false, true, false, false)], false)]
         optimset = ShareAdd.optim_set(pkgs)
         @test optimset.extra_lng == 0
         @test optimset.no_of_sets == 2
     end
 
     @testset "remove_redundant_envs!" begin
-        pkgs = [PackageInfo("P1", [EnvInfo("env1", "", Set(["P1", "P2"]), false)], false),
-                PackageInfo("P2", [EnvInfo("env2", "", Set(["P2", "P3"]), false)], false),
-                PackageInfo("P3", [EnvInfo("env3", "", Set(["P3"]), false)], false)]
+        pkgs = [PackageInfo("P1", [EnvInfo("env1", "", Set(["P1", "P2"]), false, false, true, false, false)], false),
+                PackageInfo("P2", [EnvInfo("env2", "", Set(["P2", "P3"]), false, false, true, false, false)], false),
+                PackageInfo("P3", [EnvInfo("env3", "", Set(["P3"]), false, false, true, false, false)], false)]
         result = ShareAdd.remove_redundant_envs!(pkgs)
         @test length(result[1].envs) == 1
         @test length(result[2].envs) == 1

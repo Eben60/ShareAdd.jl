@@ -411,3 +411,27 @@ function delete_shared_env(s::AbstractString)
     error("Shared environment $s not found")
 end
 export delete_shared_env
+
+function delete_shared_pkg(s::AbstractString)
+    curr_env = current_env()
+    pkinfos = list_shared_packages()
+    haskey(pkinfos, s) || error("Package $s not found")
+
+    p = pkinfos[s]
+
+    p.in_path && error("Package $s is in path. Remove it's environment first.")
+    
+    length(p.envs) > 1 && error("Package $s is present in multiple environments $([env.name for env in p.envs]). Remove it manually.")
+    e = p.envs[1]
+
+    onlyone = length(e.pkgs) == 1
+
+    @show e
+    Pkg.activate(e.path)
+    Pkg.rm(s)
+    Pkg.activate(curr_env.path)
+    onlyone && delete_shared_env(e)
+
+    return nothing
+end
+export delete_shared_pkg

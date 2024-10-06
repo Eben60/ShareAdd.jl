@@ -7,7 +7,7 @@ This Julia package exports macro `@usingany`. This macro makes package(s) availa
 - Otherwise if it can be installed, you will be prompted to select an environment to install the package(s).
 - If the package is not listed in any registry, an error will be thrown. 
 
-Usage example: While working on your package `MyPackage` you may temporarily need packages `TOML`, `Plots`, and `Chairmarks`, which however you don't want to add to your package dependencies. `TOML` is available in the `stdlib`, `Plots` you already put into a shared environment `@utilities`, and `Chairmarks` is not on your computer yet. 
+Usage example: While working on your package `MyPackage` you may temporarily need packages `TOML`, `Plots`, and `Chairmarks`, which however you don't want to add to your package dependencies. You also need `Unitful`, which is already an installed dependence of `MyPackage`. `TOML` is available in the `stdlib`, `Plots` you already put into a shared environment `@utilities`, and `Chairmarks` is not on your computer yet. 
 
 First, you add ShareAdd to your "main" (standard) enviroment, making it available at all times:
 
@@ -28,13 +28,13 @@ Now, the only thing you need, is to type into REPL (or adding to your script) th
 
 ```
 using ShareAdd
-@usingany TOML, Plots, Chairmarks
+@usingany Unitful, TOML, Plots, Chairmarks
 ```
 
 As `Chairmarks` was not installed yet, you will be asked as to where to install it. You may e.g. add it to your existing `@utilities` shared environment, or let create a new environment `@Chairmarks` and put it there. 
 
 Afrerwards `@utilities` (and `@Chairmarks`, if created) will be added to `LOAD_PATH`, making their packages available.
 
-Finally, the macro returns `using TOML, Plots, Chairmarks` - and that's it. Enjoy!
+Finally, the macro returns `using Unitful, TOML, Plots, Chairmarks` - and that's it. Enjoy!
 
 P.S. Exported functions all have docstrings. More documentation and tests promised 😉

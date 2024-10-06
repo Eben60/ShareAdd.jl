@@ -57,23 +57,23 @@ using ShareAdd: PackageInfo, EnvInfo, OptimSet, EnvSet
 end
 
 @testset "registries" begin
-    @test is_in_registries("Unitful")
-    @test ! is_in_registries("NO_Ssuch_NOnssensse")   
+    @test ShareAdd.is_in_registries("Unitful")
+    @test ! ShareAdd.is_in_registries("NO_Ssuch_NOnssensse")   
 end
 
 @testset "current_env" begin
-    ce = current_env()
-    @test ce.is_shared == false
-    @test Set(ce.curr_pkgs) == Set(["Coverage", "Test", "Aqua", "Suppressor", "TOML", "ShareAdd"])
+    ce = ShareAdd.current_env()
+    @test ce.shared == false
+    @test ce.pkgs == Set(["Coverage", "Test", "Aqua", "Suppressor", "TOML", "ShareAdd"])
 end
 
 @testset "check_packages" begin
-    cp = check_packages(["Coverage", "Test", "Aqua", "Suppressor", "TOML", "ShareAdd", "Base64", "NO_Ssuch_NOnssensse", "Zalgo"])
+    cp = ShareAdd.check_packages(["Coverage", "Test", "Aqua", "Suppressor", "TOML", "ShareAdd", "Base64", "NO_Ssuch_NOnssensse", "PackageCompiler"])
     @test Set(cp.inpath_pkgs) == Set(["Coverage", "Test", "Aqua", "Suppressor", "TOML", "ShareAdd", "Base64"])
     @test cp.inshared_pkgs == []
-    @test cp.installable_pkgs == ["Zalgo"]
+    @test cp.installable_pkgs == ["PackageCompiler"]
     @test cp.unavailable_pkgs == ["NO_Ssuch_NOnssensse"]
-    cp1 = check_packages(["Test",])
+    cp1 = ShareAdd.check_packages(["Test",])
     @test cp1.inpath_pkgs == ["Test"]
 
 end

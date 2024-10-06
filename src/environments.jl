@@ -38,7 +38,6 @@ function list_shared_environments(; depot = first(DEPOT_PATH))
         return (; shared_envs, envs_folder_path, shared_env_names)
     end
 end
-export list_shared_environments
 
 """
     list_shared_packages(;depot = first(DEPOT_PATH)) -> Dict{String, PackageInfo}
@@ -68,7 +67,6 @@ function list_shared_packages(; depot = first(DEPOT_PATH))
     end
     return packages
 end
-export list_shared_packages
 
 function env_path(env_name::AbstractString, depot = first(DEPOT_PATH); skipfirstchar = true)
     skipfirstchar && (env_name = env_name[2:end])
@@ -79,7 +77,6 @@ function is_shared_environment(env_name::AbstractString, depot = first(DEPOT_PAT
     startswith(env_name, "@") || error("Environment name must start with @")
     return env_path(env_name, depot) |> isdir
 end 
-export is_shared_environment
 
 """
     sh_add(env_name::AbstractString; depot = first(DEPOT_PATH)) -> Vector{String}
@@ -134,7 +131,6 @@ end
 
 sh_add(env_name::AbstractString, ARGS...; depot = first(DEPOT_PATH)) = sh_add(vcat(env_name, ARGS...); depot)
 
-export sh_add
 
 function list_env_pkgs(env_path) 
     project = TOML.parsefile(joinpath(env_path, "Project.toml"))
@@ -145,7 +141,6 @@ function shared_packages(env_name; depot = first(DEPOT_PATH), skipfirstchar = tr
     p = env_path(env_name, depot; skipfirstchar)
     return list_env_pkgs(p)
 end
-export shared_packages
 
 # list packages in the standard environment @stdlib
 function stdlib_packages()
@@ -153,7 +148,6 @@ function stdlib_packages()
     pkgs = [s for s in pkg_dirlist if isdir(joinpath(Sys.STDLIB, s)) && !endswith(s, "_jll")]
     return pkgs
 end
-export stdlib_packages
 
 """
     check_packages(packages; depot = first(DEPOT_PATH)) -> NamedTuple
@@ -200,7 +194,6 @@ end
 
 check_packages(package::AbstractString; depot = first(DEPOT_PATH)) = check_packages([package]; depot) 
 
-export check_packages
 
 function current_env(; depot = first(DEPOT_PATH))
     shared_envs = list_shared_environments(; depot)
@@ -235,7 +228,6 @@ function current_env(; depot = first(DEPOT_PATH))
     end
     error("This code section should never be executed")    
 end
-export current_env
 
 function is_in_registry(pkname, reg=nothing)
     isnothing(reg) && (reg = Pkg.Registry.reachable_registries()[1])
@@ -245,7 +237,6 @@ function is_in_registry(pkname, reg=nothing)
     end
     return false
 end
-export is_in_registry
 
 function is_in_registries(pkg_name)
     registries = Pkg.Registry.reachable_registries() 
@@ -256,7 +247,6 @@ function is_in_registries(pkg_name)
     end
     return false
 end
-export is_in_registries
 
 
 """
@@ -288,7 +278,6 @@ function make_importable(packages)
 
     return :success
 end
-export make_importable
 
 """
     @usingany pkg
@@ -324,7 +313,6 @@ macro usingany(packages)
 
     return q
 end
-export @usingany
 
 function install_shared(p2is::AbstractVector, current_pr)  
     for p2i in p2is
@@ -423,16 +411,25 @@ function prompt2install(new_package::AbstractString; envs = list_shared_environm
     end
 end
 
-export prompt2install
 
+"""
+    reset_loadpath!()
+
+Reset the LOAD_PATH to the default values: removes any manually added paths, and resets the load path to the standard
+values of ["@", "@v#.#", "@stdlib"]. 
+"""
 function reset_loadpath!()
     default_paths = ["@", "@v#.#", "@stdlib"]
     empty!(LOAD_PATH)
     append!(LOAD_PATH, default_paths)
     return nothing  
 end
-export reset_loadpath!
 
+"""
+    delete_shared_env(env::Union{AbstractString, EnvInfo})
+
+Delete the shared environment `env` by erasing it's directory.
+"""
 delete_shared_env(e::EnvInfo) = rm(e.path; recursive=true)
 
 function delete_shared_env(s::AbstractString)
@@ -445,8 +442,13 @@ function delete_shared_env(s::AbstractString)
 
     error("Shared environment $s not found")
 end
-export delete_shared_env
 
+"""
+    delete_shared_pkg(pkg::AbstractString)
+
+Delete the package `pkg` from it's shared environment. Delete this environment if it was the only package there.
+If the package is present in multiple environments, it will not be deleted and an error will be thrown, suggesting you do it manually.
+"""
 function delete_shared_pkg(s::AbstractString)
     curr_env = current_env()
     pkinfos = list_shared_packages()
@@ -469,4 +471,3 @@ function delete_shared_pkg(s::AbstractString)
 
     return nothing
 end
-export delete_shared_pkg

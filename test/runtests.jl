@@ -77,3 +77,17 @@ end
     @test cp1.inpath_pkgs == ["Test"]
 
 end
+
+@testset "is_minor_version" begin
+    @test ShareAdd.is_minor_version(v"1.2.3", v"1.2.4")
+    @test ShareAdd.is_minor_version(v"1.2.3", v"1.2.3")
+    @test !ShareAdd.is_minor_version(v"1.2.3", v"1.3.0")
+    @test !ShareAdd.is_minor_version(v"1.2.3", v"2.0.0")
+end
+
+@testset "stdlib_packages" begin
+    stp = ShareAdd.stdlib_packages()
+    @test "Base64" in stp
+    @test ! ("ShareAdd" in stp)
+end
+

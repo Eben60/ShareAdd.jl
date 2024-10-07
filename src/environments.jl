@@ -83,7 +83,7 @@ end
     sh_add(env_names::AbstractVector{<:AbstractString}; depot = first(DEPOT_PATH)) -> Vector{String}
     sh_add(env_name::AbstractString, ARGS...; depot = first(DEPOT_PATH)) -> Vector{String}
 
-Add shared environment(s) to `LOAD_PATH`, making the corresponding packages all available in the current session.
+Adds shared environment(s) to `LOAD_PATH`, making the corresponding packages all available in the current session.
 
 Returns the list of all packages in the added environments as a `Vector{String}`.
 
@@ -428,7 +428,7 @@ end
 """
     delete_shared_env(env::Union{AbstractString, EnvInfo})
 
-Delete the shared environment `env` by erasing it's directory.
+Deletes the shared environment `env` by erasing it's directory.
 """
 delete_shared_env(e::EnvInfo) = rm(e.path; recursive=true)
 
@@ -446,7 +446,7 @@ end
 """
     delete_shared_pkg(pkg::AbstractString)
 
-Delete the package `pkg` from it's shared environment. Delete this environment if it was the only package there.
+Deletes the package `pkg` from it's shared environment. Deletes this environment if it was the only package there.
 If the package is present in multiple environments, it will not be deleted and an error will be thrown, suggesting you do it manually.
 """
 function delete_shared_pkg(s::AbstractString)

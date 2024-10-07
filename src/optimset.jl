@@ -42,7 +42,7 @@ end
     optim_set(pks::AbstractArray{<:AbstractString}, envs::AbstractVector{EnvInfo}) -> OptimSet
     optim_set(pkgs::AbstractArray{PackageInfo}) -> OptimSet
 
-Find the optimum set of environments for the given list of packages. 
+Finds the optimum set of environments for the given list of packages. 
 Optimal is a set of environments with the least number of extraneous packages. 
 If two sets have the same number of extraneous packages, then the one with the least number of environments is chosen.
 

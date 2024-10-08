@@ -13,9 +13,8 @@ using Suppressor
 Pkg.develop(;path)
 end
 
-
+complete_tests = false
 try
-    complete_tests = false
     include("runtests.jl")
 
 finally

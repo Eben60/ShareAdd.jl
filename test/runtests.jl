@@ -1,7 +1,12 @@
 using Test
+using Aqua
 using ShareAdd
 
 using ShareAdd: PackageInfo, EnvInfo, OptimSet, EnvSet
+
+
+alltests = !(isdefined(@__MODULE__, :complete_tests) && !complete_tests)
+alltests && Aqua.test_all(ShareAdd)
 
 @testset "optimset" begin
     @testset "env_set" begin

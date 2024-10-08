@@ -6,7 +6,7 @@ makedocs(
     authors = "Eben60",
     sitename = "ShareAdd.jl",
     pages = Any[
-        "Usage" => "index.md", 
+        "General Info" => "index.md", 
         "Docstrings" => "docstrings.md"
         ],
     checkdocs = :exports, 

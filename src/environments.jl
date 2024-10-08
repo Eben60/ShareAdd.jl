@@ -68,6 +68,13 @@ function list_shared_packages(; depot = first(DEPOT_PATH))
     return packages
 end
 
+"""
+    env_path(env_name::AbstractString, depot = first(DEPOT_PATH); skipfirstchar = true) -> String
+
+Returns the path of the environment with name `env_name`. 
+If `skipfirstchar` is `true`, the first character of `env_name` is skipped, 
+so that the name of a shared environment can be passed without the leading `@`.
+"""
 function env_path(env_name::AbstractString, depot = first(DEPOT_PATH); skipfirstchar = true)
     skipfirstchar && (env_name = env_name[2:end])
     return joinpath(depot, "environments", env_name) 
@@ -194,7 +201,11 @@ end
 
 check_packages(package::AbstractString; depot = first(DEPOT_PATH)) = check_packages([package]; depot) 
 
+"""
+    current_env(; depot = first(DEPOT_PATH)) -> EnvInfo
 
+Returns information about the current active environment as an `EnvInfo` object.
+"""
 function current_env(; depot = first(DEPOT_PATH))
     shared_envs = list_shared_environments(; depot)
 
@@ -289,6 +300,8 @@ Makes package(s) available, if they are not already, and loads them with `using`
 - If a package is available in a shared environment, this environment will be pushed into `LOAD_PATH`.
 - Otherwise if it can be installed, you will be prompted to select an environment to install the package(s).
 - If the package is not listed in any registry, an error will be thrown.
+
+This macro is exported.
 """
 macro usingany(packages)
 
@@ -463,7 +476,6 @@ function delete_shared_pkg(s::AbstractString)
 
     onlyone = length(e.pkgs) == 1
 
-    @show e
     Pkg.activate(e.path)
     Pkg.rm(s)
     Pkg.activate(curr_env.path)

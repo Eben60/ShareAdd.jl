@@ -21,12 +21,27 @@ EnvInfo(name, path, pkgs::AbstractVector{<:AbstractString}, in_path) = EnvInfo(;
 Base.:(==)(a::EnvInfo, b::EnvInfo) = a.name == b.name
 Base.:copy(e::EnvInfo) = EnvInfo(e.name, e.path, copy(e.pkgs), e.in_path, e.standard_env, e.shared, e.temporary, e.active_project)
 
+"""
+    mutable struct PackageInfo
+
+- `name::String` - name of the package
+- `envs::Vector{EnvInfo}` - list of environments in which the package is present
+- `in_path::Bool` - whether any of the environments is in `LOAD_PATH`
+"""
 mutable struct PackageInfo
     const name::String
     envs::Vector{EnvInfo}
     in_path::Bool
 end
 
+"""
+    struct EnvSet
+
+- `envs::Set{String}` - set of environment names
+- `extraneous_pks::Set{String}` - (internally used, see [`optim_set`](@ref) function for details)
+- `extra_lng::Int` - as above
+- `no_of_sets::Int` - as above
+"""
 struct EnvSet
     envs::Set{String}
     extraneous_pks::Set{String}
@@ -34,6 +49,11 @@ struct EnvSet
     no_of_sets::Int
 end
 
+"""
+    mutable struct OptimSet
+
+- `best_set::EnvSet` - the best set of environments currently found - see [`optim_set`](@ref) function for details.
+"""
 mutable struct OptimSet
     best_set::EnvSet
 end

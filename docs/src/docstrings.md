@@ -7,6 +7,8 @@ Order   = [:macro, ]
 
 ## Types
 
+All types are declared as `public`
+
 ```@autodocs
 Modules = [ShareAdd]
 Order   = [:type, ]
@@ -16,13 +18,18 @@ Order   = [:type, ]
 
 ### Exported functions
 
-coming here
+```@autodocs
+Modules = [ShareAdd]
+Order   = [:function]
+Filter = t -> Base.isexported(ShareAdd, Symbol(t))
+```
 
 ### Internal functions
 
 ```@autodocs
 Modules = [ShareAdd]
 Order   = [:function]
+Filter = t -> ! Base.isexported(ShareAdd, Symbol(t))
 ```
 
 ## Index

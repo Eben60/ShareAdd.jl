@@ -24,12 +24,20 @@ Order   = [:function]
 Filter = t -> Base.isexported(ShareAdd, Symbol(t))
 ```
 
+### Public functions
+
+```@autodocs
+Modules = [ShareAdd]
+Order   = [:function]
+Filter = t -> (! Base.isexported(ShareAdd, Symbol(t)) && Base.ispublic(ShareAdd, Symbol(t)))
+```
+
 ### Internal functions
 
 ```@autodocs
 Modules = [ShareAdd]
 Order   = [:function]
-Filter = t -> ! Base.isexported(ShareAdd, Symbol(t))
+Filter = t -> ! Base.ispublic(ShareAdd, Symbol(t))
 ```
 
 ## Index

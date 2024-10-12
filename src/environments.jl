@@ -12,6 +12,7 @@ function list_shared_environments(; depot = first(DEPOT_PATH))
 
     if !isdir(envs_folder_path)
         return String[]
+        (; shared_envs=String[], envs_folder_path=nothing, shared_env_names=String[])
     else
         env_dirlist = readdir(envs_folder_path)
         envs = [s for s in env_dirlist if isdir(joinpath(envs_folder_path, s))]

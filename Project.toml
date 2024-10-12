@@ -5,11 +5,13 @@ version = "0.1.1"
 
 [deps]
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
 REPL = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 
 [compat]
 Pkg = "<0.0.1, 1"
+PrecompileTools = "1.2.1"
 REPL = "<0.0.1, 1"
 TOML = "<0.0.1, 1"
 julia = "1.10"

@@ -21,4 +21,7 @@ if VERSION >= v"1.11.0-DEV.469"
     include("public.julia")
 end
 
+using PrecompileTools: @compile_workload
+include("precompile.jl")
+
 end # module ShAdd

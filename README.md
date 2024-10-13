@@ -5,7 +5,7 @@
 
 # ShareAdd.jl
 
-This Julia package exports macro `@usingany`. This macro makes package(s) available, if they are not already, and loads them with `using` keyword.
+This Julia package is intended for interactive use. It exports the macro `@usingany`: This macro makes package(s) available, if they are not already, and loads them with `using` keyword.
 
 ## Documentation at 
 [https://eben60.github.io/ShareAdd.jl/](https://eben60.github.io/ShareAdd.jl/)

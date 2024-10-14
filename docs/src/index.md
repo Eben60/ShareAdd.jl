@@ -9,7 +9,7 @@
 This Julia package is intended for interactive use. It exports the macro `@usingany`: This macro makes package(s) available, if they are not already, and loads them with `using` keyword.
 
 - If a package is available in an environment in LOAD_PATH, that's OK.
-- If a package is available in a shared environment, this environment will be pushed into LOAD_PATH.
+- If a package is available in a [shared environment](https://pkgdocs.julialang.org/v1/environments/#Shared-environments), this environment will be pushed into LOAD_PATH.
 - Otherwise if it can be installed, you will be prompted to select an environment to install the package(s).
 - If the package is not listed in any registry, an error will be thrown. 
 

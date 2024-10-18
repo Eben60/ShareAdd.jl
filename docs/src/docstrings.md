@@ -5,15 +5,6 @@ Modules = [ShareAdd]
 Order   = [:macro, ]
 ```
 
-## Types
-
-All types are declared as `public`
-
-```@autodocs
-Modules = [ShareAdd]
-Order   = [:type, ]
-```
-
 ## Functions
 
 ### Exported functions
@@ -38,6 +29,15 @@ Filter = t -> (! Base.isexported(ShareAdd, Symbol(t)) && Base.ispublic(ShareAdd,
 Modules = [ShareAdd]
 Order   = [:function]
 Filter = t -> ! Base.ispublic(ShareAdd, Symbol(t))
+```
+
+## Types
+
+All types are declared as `public`
+
+```@autodocs
+Modules = [ShareAdd]
+Order   = [:type, ]
 ```
 
 ## Index

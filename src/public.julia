@@ -1,3 +1,2 @@
-public list_shared_environments, list_shared_packages, env_path, check_packages, current_env
+public shared_environments_envinfos, list_shared_packages, env_path, check_packages, current_env
 public EnvInfo, PackageInfo, EnvSet, OptimSet
-public optim_set

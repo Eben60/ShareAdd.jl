@@ -3,9 +3,13 @@ is_minor_version(v1::VersionNumber, v2::VersionNumber) =
     v1.major == v2.major && v1.minor == v2.minor
 
 """
-    list_shared_environments(depot = first(DEPOT_PATH)) -> (shared_envs::Vector{EnvInfo}, env_path::String)
+    shared_environments_envinfos(; depot = first(DEPOT_PATH)) -> 
+        (; shared_envs::Vector{EnvInfo},
+        envs_folder_path::String, 
+        shared_env_names::Vector{String})
+
 """
-function list_shared_environments(; depot = first(DEPOT_PATH))
+function shared_environments_envinfos(; depot = first(DEPOT_PATH))
     envs_folder_path = joinpath(depot, "environments")
     j_env = nothing
     shared_envs = EnvInfo[]
@@ -40,10 +44,17 @@ function list_shared_environments(; depot = first(DEPOT_PATH))
 end
 
 """
+    list_shared_environments() -> Vector{String}
+
+Returns the names of all shared environments as a Vector of Strings.
+"""
+list_shared_environments() = shared_environments_envinfos().shared_env_names
+
+"""
     list_shared_packages(;depot = first(DEPOT_PATH)) -> Dict{String, PackageInfo}
 """
 function list_shared_packages(; depot = first(DEPOT_PATH))
-    (; shared_envs, ) = list_shared_environments(; depot)
+    (; shared_envs, ) = shared_environments_envinfos(; depot)
     packages = Dict{String, PackageInfo}()
     for env in shared_envs
         prs = shared_packages(env.name; depot, skipfirstchar = false)
@@ -207,7 +218,7 @@ check_packages(package::AbstractString; depot = first(DEPOT_PATH)) = check_packa
 Returns information about the current active environment as an `EnvInfo` object.
 """
 function current_env(; depot = first(DEPOT_PATH))
-    shared_envs = list_shared_environments(; depot)
+    shared_envs = shared_environments_envinfos(; depot)
 
     shared_env_paths = [env.path for env in shared_envs.shared_envs]
 
@@ -400,7 +411,7 @@ function prompt2install(packages::AbstractVector{<:AbstractString})
     return to_install
 end
 
-function prompt2install(new_package::AbstractString; envs = list_shared_environments().shared_envs)
+function prompt2install(new_package::AbstractString; envs = shared_environments_envinfos().shared_envs)
     currproj = current_env()
     currproj.shared || push!(envs, currproj)
 
@@ -449,7 +460,7 @@ function delete_shared_env(s::AbstractString)
     startswith(s, "@") || error("Name of shared environment must start with @")
     s = s[2:end]
 
-    for env in list_shared_environments().shared_envs
+    for env in shared_environments_envinfos().shared_envs
         env.name == s && return delete_shared_env(env)
     end
 

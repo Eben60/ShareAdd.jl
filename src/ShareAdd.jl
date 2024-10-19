@@ -15,7 +15,7 @@ include("optimset.jl")
 include("environments.jl")
 
 export @usingany
-export delete_shared_env, delete_shared_pkg, list_shared_environments, reset_loadpath!, sh_add
+export delete_shared_env, delete_shared_pkg, list_shared_envs, list_shared_pkgs, reset_loadpath!, sh_add, update_shared
 
 if VERSION >= v"1.11.0-DEV.469"
     include("public.julia")

@@ -103,6 +103,6 @@ function recurse_sets!(optimset::OptimSet, envinfos::Vector{EnvInfo}, required_p
 end
 
 make_pkginfos(pknames::AbstractVector{<:AbstractString}, envs::AbstractVector{EnvInfo}) = 
-    [PackageInfo(pkname, filter(env -> pkname in env.pkgs, envs), false) for pkname in pknames]
+    [PackageInfo(pkname, filter(env -> pkname in env.pkgs, envs), false, missing) for pkname in pknames]
 
 export make_pkginfos

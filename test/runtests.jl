@@ -19,9 +19,9 @@ alltests && Aqua.test_all(ShareAdd)
     end
 
     @testset "init_optimset" begin
-        pkgs = [PackageInfo("P1", [EnvInfo("env1", "", Set(["P1", "P2"]), false, false, true, false, false)], false),
-                PackageInfo("P2", [EnvInfo("env2", "", Set(["P2", "P3"]), false, false, true, false, false)], false),
-                PackageInfo("P3", [EnvInfo("env3", "", Set(["P3"]), false, false, true, false, false)], false)]
+        pkgs = [PackageInfo("P1", [EnvInfo("env1", "", Set(["P1", "P2"]), false, false, true, false, false)], false, false),
+                PackageInfo("P2", [EnvInfo("env2", "", Set(["P2", "P3"]), false, false, true, false, false)], false, false),
+                PackageInfo("P3", [EnvInfo("env3", "", Set(["P3"]), false, false, true, false, false)], false, false)]
         optimset = ShareAdd.init_optimset(pkgs)
         @test optimset.best_set.extra_lng == 0
         @test optimset.best_set.no_of_sets == 3
@@ -32,28 +32,28 @@ alltests && Aqua.test_all(ShareAdd)
         envinfos = [EnvInfo("env1", "", Set(["P1", "P2"]), false, false, true, false, false),
                     EnvInfo("env2", "", Set(["P2", "P3"]), false, false, true, false, false),
                     EnvInfo("env3", "", Set(["P3"]), false, false, true, false, false)]
-        optimset = ShareAdd.init_optimset([PackageInfo("P1", envinfos, false),
-                                          PackageInfo("P2", envinfos, false),
-                                          PackageInfo("P3", envinfos, false)])
+        optimset = ShareAdd.init_optimset([PackageInfo("P1", envinfos, false, false),
+                                          PackageInfo("P2", envinfos, false, false),
+                                          PackageInfo("P3", envinfos, false, false)])
         ShareAdd.recurse_sets!(optimset, envinfos, required_pkgs)
         @test optimset.best_set.extra_lng == 0
         @test optimset.best_set.no_of_sets == 2
     end
 
     @testset "optim_set" begin
-        pkgs = [PackageInfo("P1", [EnvInfo("env1", "", Set(["P1", "P2"]), false, false, true, false, false)], false),
+        pkgs = [PackageInfo("P1", [EnvInfo("env1", "", Set(["P1", "P2"]), false, false, true, false, false)], false, false),
                 PackageInfo("P2", [EnvInfo("env2", "", Set(["P2", "P4"]), false, false, true, false, false), 
-                    EnvInfo("env4", "", Set(["P2", "P3"]), false, false, true, false, false)], false),
-                PackageInfo("P3", [EnvInfo("env3", "", Set(["P3"]), false, false, true, false, false)], false)]
+                    EnvInfo("env4", "", Set(["P2", "P3"]), false, false, true, false, false)], false, false),
+                PackageInfo("P3", [EnvInfo("env3", "", Set(["P3"]), false, false, true, false, false)], false, false)]
         optimset = ShareAdd.optim_set(pkgs)
         @test optimset.extra_lng == 0
         @test optimset.no_of_sets == 2
     end
 
     @testset "remove_redundant_envs!" begin
-        pkgs = [PackageInfo("P1", [EnvInfo("env1", "", Set(["P1", "P2"]), false, false, true, false, false)], false),
-                PackageInfo("P2", [EnvInfo("env2", "", Set(["P2", "P3"]), false, false, true, false, false)], false),
-                PackageInfo("P3", [EnvInfo("env3", "", Set(["P3"]), false, false, true, false, false)], false)]
+        pkgs = [PackageInfo("P1", [EnvInfo("env1", "", Set(["P1", "P2"]), false, false, true, false, false)], false, false),
+                PackageInfo("P2", [EnvInfo("env2", "", Set(["P2", "P3"]), false, false, true, false, false)], false, false),
+                PackageInfo("P3", [EnvInfo("env3", "", Set(["P3"]), false, false, true, false, false)], false, false)]
         result = ShareAdd.remove_redundant_envs!(pkgs)
         @test length(result[1].envs) == 1
         @test length(result[2].envs) == 1

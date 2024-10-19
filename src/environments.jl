@@ -44,11 +44,11 @@ function shared_environments_envinfos(; depot = first(DEPOT_PATH))
 end
 
 """
-    list_shared_environments() -> Vector{String}
+    list_shared_envs() -> Vector{String}
 
-Returns the names of all shared environments as a Vector of Strings.
+Returns the names of all shared environments.
 """
-list_shared_environments() = shared_environments_envinfos().shared_env_names
+list_shared_envs() = shared_environments_envinfos().shared_env_names
 
 """
     list_shared_packages(;depot = first(DEPOT_PATH)) -> Dict{String, PackageInfo}
@@ -57,16 +57,16 @@ function list_shared_packages(; depot = first(DEPOT_PATH))
     (; shared_envs, ) = shared_environments_envinfos(; depot)
     packages = Dict{String, PackageInfo}()
     for env in shared_envs
-        prs = shared_packages(env.name; depot, skipfirstchar = false)
-        for pr in prs
-            if !haskey(packages, pr)
-                p = PackageInfo(pr, [env], env.in_path)
-                p.in_path && empty!(p.envs) # if it is already in path, it doesn't matter which env it is
-                packages[pr] = p
+        pks = shared_packages(env.name; depot, skipfirstchar = false)
+        for pk in pks
+            if !haskey(packages, pk)
+                p = PackageInfo(pk, [env], env.in_path, false)
+                # p.in_path && empty!(p.envs) # if it is already in path, it doesn't matter which env it is
+                packages[pk] = p
             else
-                push!(packages[pr].envs, env)
-                packages[pr].in_path |= env.in_path
-                packages[pr].in_path && empty!(packages[pr].envs)
+                push!(packages[pk].envs, env)
+                packages[pk].in_path |= env.in_path
+                # packages[pk].in_path && empty!(packages[pk].envs)
             end
         end
     end
@@ -74,10 +74,22 @@ function list_shared_packages(; depot = first(DEPOT_PATH))
     # add packages in @stdlib
     std_pcks = stdlib_packages()
     for pk in std_pcks
-        packages[pk] = PackageInfo(pk, EnvInfo[], true)
+        packages[pk] = PackageInfo(pk, EnvInfo[], true, true)
     end
     return packages
 end
+
+"""
+    list_shared_pkgs(; all=false) -> Vector{String}
+
+Returns the names of packages in all shared environments. If `all=true`, also includes packages in @stdlib.
+"""
+function list_shared_pkgs(; all=false)
+    packages = list_shared_packages()
+    all && return collect(keys(packages)) |> sort
+    return collect(keys(filter(p -> !p.second.in_stdlib, packages))) |> sort
+end
+
 
 """
     env_path(env_name::AbstractString, depot = first(DEPOT_PATH); skipfirstchar = true) -> String
@@ -453,8 +465,10 @@ end
     delete_shared_env(env::Union{AbstractString, EnvInfo})
 
 Deletes the shared environment `env` by erasing it's directory.
+
+Returns `nothing`.
 """
-delete_shared_env(e::EnvInfo) = rm(e.path; recursive=true)
+delete_shared_env(e::EnvInfo) = (rm(e.path; recursive=true); return nothing)
 
 function delete_shared_env(s::AbstractString)
     startswith(s, "@") || error("Name of shared environment must start with @")
@@ -472,6 +486,8 @@ end
 
 Deletes the package `pkg` from it's shared environment. Deletes this environment if it was the only package there.
 If the package is present in multiple environments, it will not be deleted and an error will be thrown, suggesting you do it manually.
+
+Returns `nothing`.
 """
 function delete_shared_pkg(s::AbstractString)
     curr_env = current_env()
@@ -494,3 +510,67 @@ function delete_shared_pkg(s::AbstractString)
 
     return nothing
 end
+
+"""
+    update_shared()
+    update_shared(nm::AbstractString)
+    update_shared(nm::Vector{AbstractString})
+    update_shared(env::AbstractString, pkgs::Union{AbstractString, Vector{AbstractString}}) 
+    update_shared(env::EnvInfo, pkgs::Union{Nothing, S, Vector{S}} = Nothing) where S <: AbstractString
+
+- Called with no arguments, updates all shared environments.
+- Called with a single argument `nm::String` starting with "@", updates the environment `nm` (if it exists).
+- Called with a single argument `nm::String` not starting with "@", updates the package `nm` in all shared environments.
+- Called with a single argument `nm::Vector{String}`, updates the packages and/or environments in `nm`.
+- Called with two arguments `env` and `pkgs`, updates the package(s) `pkgs` in the environment `env`.
+
+Returnes `nothing`.
+"""
+function update_shared(env::EnvInfo, pkgs::Union{Nothing, AbstractString, Vector{<:AbstractString}} = nothing) 
+    curr_env = current_env()
+    Pkg.activate(env.path)
+    isnothing(pkgs) ? Pkg.update() : Pkg.update(pkgs)
+    Pkg.activate(curr_env.path)
+    return nothing
+end
+
+function update_shared()
+    envinfos = shared_environments_envinfos().shared_envs
+    for env in envinfos
+        update_shared(env)
+    end
+    return nothing
+end
+
+function getenvinfo(nm::AbstractString)
+    isenv = startswith(nm, "@")
+    isenv || error("Name of shared environment must start with @")
+    nm = nm[2:end]
+    (; shared_envs, shared_env_names) = shared_environments_envinfos()
+    nm in shared_env_names || error("Shared environment $nm not found")
+    env = shared_envs[findfirst(x -> x.name == nm, shared_envs)]
+    return env
+end
+
+function update_shared(nm::AbstractString)
+    isenv = startswith(nm, "@")
+    if isenv
+        env = getenvinfo(nm)
+        update_shared(env)
+    else
+        packages = list_shared_packages()
+        haskey(packages, nm) || error("Package $nm not found")
+        p = packages[nm]
+        for env in p.envs
+            update_shared(env, nm)
+        end
+    end
+    return nothing
+end
+
+function update_shared(env::AbstractString, pkgs::Union{AbstractString, Vector{AbstractString}}) 
+    startswith(env, "@") || error("Name of shared environment must start with @")
+    update_shared(getenvinfo(env), pkgs)
+end
+
+update_shared(nm::Vector{AbstractString}) = (update_shared.(nm); return nothing)

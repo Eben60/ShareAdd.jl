@@ -32,6 +32,7 @@ mutable struct PackageInfo
     const name::String
     envs::Vector{EnvInfo}
     in_path::Bool
+    in_stdlib::Union{Bool, Missing}
 end
 
 """

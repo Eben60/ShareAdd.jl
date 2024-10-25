@@ -163,6 +163,8 @@ sh_add(env_name::AbstractString, ARGS...; depot = first(DEPOT_PATH)) = sh_add(vc
 
 
 function list_env_pkgs(env_path) 
+    fl = joinpath(env_path, "Project.toml")
+    isfile(fl) || return String[]
     project = TOML.parsefile(joinpath(env_path, "Project.toml"))
     return keys(project["deps"]) |> collect |> sort
 end
@@ -236,7 +238,7 @@ function current_env(; depot = first(DEPOT_PATH))
 
 
     pr = Base.active_project()
-    pkgs = keys(TOML.parsefile(pr)["deps"])
+    pkgs = isfile(pr) ? keys(TOML.parsefile(pr)["deps"]) : Set(String[])
     curr_pr_path = dirname(pr)
     d = curr_pr_path |> basename
     (base_name, extension) = splitext(d)
@@ -451,7 +453,7 @@ end
 """
     reset_loadpath!()
 
-Reset the LOAD_PATH to the default values: removes any manually added paths, and resets the load path to the standard
+Resets the LOAD_PATH to the default values: removes any manually added paths, and resets the load path to the standard
 values of ["@", "@v#.#", "@stdlib"]. 
 """
 function reset_loadpath!()

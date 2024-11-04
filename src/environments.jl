@@ -284,9 +284,16 @@ function is_in_registries(pkg_name)
     return false
 end
 
-
 """
-    make_importable(packages) -> :success | nothing
+    make_importable(pkg::AbstractString)
+    make_importable(pkgs::AbstractVector{<:AbstractString})
+    make_importable(pkg1, pkg2, ...)
+
+Checks  packages (by name only, UUIDs not supported!), prompts to install packages which are not in any shared environment, and adds relevant shared environments to `LOAD_PATH`.
+
+Returns `:success` if the operation was successful, and `nothing` if the user selected "Quit. Do Nothing." on any of the prompts.
+
+Throws an error on unavailable packages.
 """
 function make_importable(packages)
     (; inshared_pkgs, installable_pkgs, unavailable_pkgs, shared_pkgs, current_pr) = check_packages(packages)
@@ -313,6 +320,11 @@ function make_importable(packages)
     end
 
     return :success
+end
+
+function make_importable(arg::AbstractString, args...)
+    [arg, args...]
+    return make_importable([arg, args...])
 end
 
 """
@@ -415,6 +427,22 @@ function prompt4newenv(new_package)
     return answer
 end
 
+"""
+    prompt2install(packages::AbstractVector{<:AbstractString})
+    prompt2install(package::AbstractString)
+
+Prompt user to select a shared environment to install a package or packages.
+
+For a single package, if the user selects an environment, the package will be installed there. 
+If the user selects "A new shared environment (you will be prompted for the name)", the user will be prompted to enter a name for a new environment. 
+
+For multiple packages, the function will be called on each package and the user will be prompted for each package.
+
+The function will return a vector of NamedTuples, each with field `pkg` and `env`, 
+where `pkg` is the name of the package and `env` is the environment where it should be installed.
+
+The function will return `nothing` if the user selects "Quit. Do Nothing." on any of the prompts.
+"""
 function prompt2install(packages::AbstractVector{<:AbstractString})
     to_install = []
     for p in packages

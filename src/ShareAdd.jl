@@ -14,6 +14,7 @@ include("types.jl")
 include("optimset.jl")
 include("environments.jl")
 include("temporary_envs.jl")
+include("experiments.jl")
 
 export @usingany
 export delete_shared_env, delete_shared_pkg, list_shared_envs, list_shared_pkgs, reset_loadpath!, sh_add, update_shared, make_importable

@@ -47,6 +47,18 @@ Afrerwards `@utilities` (and `@Chairmarks`, if created) will be added to `LOAD_P
 
 Finally, the macro executes `using Unitful, TOML, Plots, Chairmarks` - and that's it. Enjoy!
 
+## Other functions and usage cases
+
+The function [`make_importable`](@ref) does what it's name says. It is used internally by [`@usingany`](@ref), but can be used separately e.g. 
+if you e.g. want to import a package via `import` statement instead of `using`:
+
+```
+using ShareAdd
+make_importable("Foo")
+import Foo
+```
+
+
 ## Likes & dislikes?
 
 Star on GitHub, open an issue, contact me on Julia Discourse.

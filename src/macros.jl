@@ -1,6 +1,8 @@
 """
     @usingany pkg
     @usingany pkg1, pkg2, ... 
+    @usingany pkg: fn
+    @usingany pkg: fn, ... 
 
 Makes package(s) available, if they are not already, and loads them with `using` keyword. 
 
@@ -8,6 +10,8 @@ Makes package(s) available, if they are not already, and loads them with `using`
 - If a package is available in a shared environment, this environment will be pushed into `LOAD_PATH`.
 - Otherwise if it can be installed, you will be prompted to select an environment to install the package(s).
 - If the package is not listed in any registry, an error will be thrown.
+
+
 
 This macro is exported.
 """

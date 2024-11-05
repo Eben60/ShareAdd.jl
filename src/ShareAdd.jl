@@ -14,6 +14,7 @@ include("types.jl")
 include("optimset.jl")
 include("environments.jl")
 include("temporary_envs.jl")
+include("macros.jl")
 include("experiments.jl")
 
 export @usingany

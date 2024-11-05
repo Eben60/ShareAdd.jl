@@ -12,12 +12,17 @@
 # end
 
 macro shargs(x)
+    err_msg = """
+    Cannot make sense of `@usingany` arguments. 
+    If the error was NOT caused by a typo, and you believe you wrote a sensible syntax,
+    please check the docs of `@usingany` and `make_importable` """
+
     p = parse_using_functions(x)
     if !isnothing(p)
         (; packages, expr) = p
     else
         p = parse_packages(x)
-        isnothing(p) && (println("error"); return nothing)
+        isnothing(p) && (println(err_msg); return nothing)
         (; packages, expr) = p
     end
 
@@ -26,6 +31,8 @@ macro shargs(x)
     return nothing
 
 end
+
+export @shargs
 
 function parse_packages(x)
     if x isa Symbol

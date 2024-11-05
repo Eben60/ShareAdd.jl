@@ -304,12 +304,12 @@ Throws an error on unavailable packages.
 julia> using ShareAdd
 julia> make_importable("Foo")
 :success
-julia> import Foo
+julia> import Foo 
 
 julia> using ShareAdd
 julia> make_importable("Foo")
 :success
-julia> using Foo: @bar
+julia> using Foo: @bar # @usingany Foo: @bar is not a supported syntax
 ```
 """
 function make_importable(packages)

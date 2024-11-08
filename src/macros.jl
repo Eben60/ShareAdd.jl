@@ -11,6 +11,8 @@ Makes package(s) available, if they are not already, and loads them with `using`
 - Otherwise if package(s) can be installed, you will be prompted to select an environment to install each package.
 - If the package is not listed in any registry, an error will be thrown.
 
+The form `@usingany pkg: @mcr` is not currently supported. 
+
 This macro is exported.
 """
 macro usingany(x)
@@ -94,3 +96,6 @@ function parse_using_functions(x)
         return nothing
     end
 end
+
+
+# TODO check https://expronicon.rogerluo.dev/

@@ -1,5 +1,6 @@
 @compile_workload begin
     @usingany Pkg
+    @usingany Pkg: add
     check_packages("NO_Ssuch_NOnssensse")
 
     pkgs = [PackageInfo("P1", [EnvInfo("env1", "", Set(["P1", "P2"]), false, false, true, false, false)], false, missing),

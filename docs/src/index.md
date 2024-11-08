@@ -17,7 +17,7 @@ The package also exports several utility functions - see the [Exported functions
 
 ## Usage example
 
-While working on your package `MyPackage` you may temporarily need packages `TOML`, `Plots`, and `Chairmarks`, which however you don't want to add to your package dependencies. You also need `Unitful`, which is already an installed dependence of `MyPackage`. `TOML` is available in the `stdlib`, `Plots` you already put into a shared environment `@utilities`, and `Chairmarks` is not on your computer yet. 
+While working on your package `MyPackage` you may temporarily need packages `TOML`, `Plots`, and `Chairmarks`, which however you don't want to add to your package dependencies. You also need `Unitful`, which is already an installed dependence of `MyPackage`. `TOML` is available in the `stdlib`, `Plots` you already put into a shared environment `@utilities`, and `Chairmarks` is not on your computer yet. Furthermore, from the package `Dates` (`stdlib`) we need the function `monthname` only.
 
 First, you add ShareAdd to your "main" (standard) enviroment, making it available at all times:
 
@@ -34,18 +34,31 @@ First, you add ShareAdd to your "main" (standard) enviroment, making it availabl
 
 By that occasion you may also want to clean your standard environment: It is generally not recommended having a lot of packages there.
 
-Now, the only thing you need, is to type into REPL (or adding to your script) the following two lines:
+Now, the only thing you need, is to type into REPL (or adding to your script) the following three lines:
 
 ```
 using ShareAdd
 @usingany Unitful, TOML, Plots, Chairmarks
+@usingany Dates: monthname
 ```
 
 As `Chairmarks` was not installed yet, you will be asked as to where to install it. You may e.g. add it to your existing `@utilities` shared environment, or let create a new environment `@Chairmarks` and put it there. 
 
 Afrerwards `@utilities` (and `@Chairmarks`, if created) will be added to `LOAD_PATH`, making their packages available.
 
-Finally, the macro executes `using Unitful, TOML, Plots, Chairmarks` - and that's it. Enjoy!
+Finally, the first macro executes `using Unitful, TOML, Plots, Chairmarks` - and that's it. Enjoy!
+
+## Other functions and usage cases
+
+The function [`make_importable`](@ref) does what it's name says. It is used internally by [`@usingany`](@ref), but can be used separately e.g. 
+if you e.g. want to import a package via `import` statement instead of `using`:
+
+```
+using ShareAdd
+make_importable("Foo")
+import Foo
+```
+
 
 ## Likes & dislikes?
 

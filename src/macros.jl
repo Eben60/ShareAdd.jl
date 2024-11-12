@@ -61,8 +61,20 @@ function parse_colon(x)
     x isa Expr || return nothing
     (x.head == :call && x.args[1] == :(:) && length(x.args) == 3) || return nothing
     pkg = String(x.args[2])
-    fns = [x.args[3] |> String]
+    fns = fn2string(x.args[3]) 
+    @show fns, typeof(fns)
+    fns = [fns |> String]
     return (; pkg, fns)
+end
+
+"converts function or macro name to string"
+function fn2string(x)
+    x isa Symbol && return x |> String
+    x isa Expr || error("problems making up sense of arguments")
+    x.head == :macrocall || error("problems making up sense of arguments")
+    # @show x.args
+    return x.args[1] |> String
+
 end
 
 function call_using_functions(args...)

@@ -68,3 +68,17 @@ end
 
 
 export @prs
+
+macro dsp(x)
+    # @show x.head, x.args, x.args[3], typeof(x.args[3])
+    xx = x.args[3]
+    @show xx.head, xx.args
+    return nothing
+end
+
+"""
+julia> @dsp Foo: @bar
+(xx.head, xx.args) = (:macrocall, Any[Symbol("@bar"), :(#= REPL[9]:1 =#)])
+"""
+
+export @dsp

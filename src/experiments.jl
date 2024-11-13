@@ -27,24 +27,7 @@ function parse_kwargs(args)
     return (;kwargs=NamedTuple(kwargs), last_kwarg_index=i)
 end
 
-function parse_usings(x)
-    err_msg = """
-    Cannot make sense of `@usingany` arguments. 
-    If the error was NOT caused by a typo, and you believe you wrote a sensible syntax,
-    please check the docs of `@usingany` and `make_importable` """
 
-    # usage like
-    # @usingany Foo: bar
-    p = parse_using_functions(x) 
-
-    # usage like
-    # @usingany Foo, Baz
-    isnothing(p) && (p = parse_packages(x))
-  
-    isnothing(p) && error(err_msg)
-    
-    return p
-end
 
 macro prs(args...)
     err_msg = """

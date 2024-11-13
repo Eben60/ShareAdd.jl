@@ -1,5 +1,6 @@
 """
-This Julia package exports macro `@usingany`. This macro makes package(s) available, if they are not already, and loads them with `using` keyword. 
+This Julia package exports macro `@usingany`. This macro makes package(s) available, if they are not already, and loads 
+them with `using` keyword. 
 
 - If a package is available in an environment in `LOAD_PATH`, that's OK.
 - If a package is available in a shared environment, this environment will be pushed into `LOAD_PATH`.
@@ -14,7 +15,7 @@ include("types.jl")
 include("optimset.jl")
 include("environments.jl")
 # include("temporary_envs.jl")
-include("experiments.jl")
+# include("experiments.jl")
 include("macros.jl")
 
 export @usingany

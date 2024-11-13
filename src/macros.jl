@@ -11,12 +11,19 @@ Makes package(s) available, if they are not already, and loads them with `using`
 - Otherwise if package(s) can be installed, you will be prompted to select an environment to install each package.
 - If the package is not listed in any registry, an error will be thrown.
 
-The form `@usingany pkg: @mcr` is not currently supported. 
-
 This macro is exported.
 """
 macro usingany(x)
+    (; packages, expr) = parse_usings(x)
 
+    mi = make_importable(packages)
+    mi != :success && error("Some packages could not be installed")
+
+    q = Meta.parse(expr)
+    return q
+end
+
+function parse_usings(x)
     err_msg = """
     Cannot make sense of `@usingany` arguments. 
     If the error was NOT caused by a typo, and you believe you wrote a sensible syntax,
@@ -31,13 +38,8 @@ macro usingany(x)
     isnothing(p) && (p = parse_packages(x))
   
     isnothing(p) && error(err_msg)
-    (; packages, expr) = p
-
-    mi = make_importable(packages)
-    mi != :success && error("Some packages could not be installed")
-
-    q = Meta.parse(expr)
-    return q
+    
+    return p
 end
 
 function parse_packages(x)
@@ -62,7 +64,6 @@ function parse_colon(x)
     (x.head == :call && x.args[1] == :(:) && length(x.args) == 3) || return nothing
     pkg = String(x.args[2])
     fns = fn2string(x.args[3]) 
-    @show fns, typeof(fns)
     fns = [fns |> String]
     return (; pkg, fns)
 end
@@ -72,9 +73,7 @@ function fn2string(x)
     x isa Symbol && return x |> String
     x isa Expr || error("problems making up sense of arguments")
     x.head == :macrocall || error("problems making up sense of arguments")
-    # @show x.args
     return x.args[1] |> String
-
 end
 
 function call_using_functions(args...)
@@ -102,12 +101,10 @@ function parse_using_functions(x)
         x1 = x.args[1]
         pc = parse_colon(x1)
         isnothing(pc) && return nothing
-        functions = x.args[2:end] .|> String
+        functions = x.args[2:end] .|> fn2string
         return call_using_functions(pc, functions)
     else
         return nothing
     end
 end
 
-
-# TODO check https://expronicon.rogerluo.dev/

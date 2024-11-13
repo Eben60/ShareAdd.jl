@@ -17,9 +17,7 @@ The package also exports several utility functions - see the [Exported functions
 
 ## Usage example
 
-While working on your package `MyPackage` you may temporarily need packages `TOML`, `Plots`, and `Chairmarks`, which however you don't want to add to your package dependencies. You also need `Unitful`, which is already an installed dependence of `MyPackage`. `TOML` is available in the `stdlib`, `Plots` you already put into a shared environment `@utilities`, and `Chairmarks` is not on your computer yet. Furthermore, from the package `BenchmarkTools` (available from `@utilities` as well) we need only the macro `@btime` and the function `save`
-
-Furthermore, from the package `Dates` (`stdlib`) we need the function `monthname` only.
+While working on your package `MyPackage` you may temporarily need packages `TOML`, `Plots`, and `Chairmarks`, which however you don't want to add to your package dependencies. You also need `Unitful`, which is already an installed dependence of `MyPackage`. `TOML` is available in the `stdlib`, `Plots` you already put into a shared environment `@utilities`, and `Chairmarks` is not on your computer yet. Furthermore, from the package `BenchmarkTools` (available from `@utilities` as well) we need only the macro `@btime` and the function `save`.
 
 First, you add ShareAdd to your "main" (standard) enviroment, making it available at all times:
 

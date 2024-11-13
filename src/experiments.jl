@@ -1,5 +1,12 @@
 # @
 
+@kwdef mutable struct accepted_kwargs
+    update_pkg::Bool = false
+    update_env::Bool = false
+    update_all::Bool = false
+end
+
+
 function parse_kwarg(arg)
     arg isa Expr || return nothing
     @show arg.head #, arg.head == :(=)
@@ -12,21 +19,19 @@ function parse_kwarg(arg)
 end
 
 function parse_kwargs(args)
-    kwargnames = [:update_pkg, :update_env, :update_all]
-
     i = 0
-    kwargs = Dict(kwargnames .=> falses(length(kwargnames)))
+    kwargs = accepted_kwargs()
     for arg in args
         pk = parse_kwarg(arg)
         isnothing(pk) && break
         (; kw, val) = pk
-        haskey(kwargs, kw) || error("Unknown keyword $kw")
-        kwargs[kw] = val
+        kw = Symbol(kw)
+        hasproperty(kwargs, kw) || error("Unknown keyword $kw")
+        setproperty!(kwargs, kw, val)
         i += 1
     end
-    return (;kwargs=NamedTuple(kwargs), last_kwarg_index=i)
+    return (;kwargs, last_kwarg_index=i)
 end
-
 
 
 macro prs(args...)
@@ -36,7 +41,6 @@ macro prs(args...)
     please check the docs of `@usingany` and `make_importable` """
 
     (;kwargs, last_kwarg_index) = parse_kwargs(args)
-    # (; update_pkg, update_env, update_all) = kwargs
 
     lastargs = length(args) - last_kwarg_index
 

@@ -13,11 +13,18 @@ Makes package(s) available, if they are not already, and loads them with `using`
 
 This macro is exported.
 """
-macro usingany(x)
-    (; packages, expr) = parse_usings(x)
+macro usingany(args...)
+    (;kwargs, last_kwarg_index) = parse_kwargs(args)
+    lastargs = length(args) - last_kwarg_index
+    lastargs > 1 && error(err_msg)
+
+    p = lastargs == 0 ? nothing : parse_usings(args[end])
+    (; packages, expr) = p
 
     mi = make_importable(packages)
     mi != :success && error("Some packages could not be installed")
+
+    update_if_asked(kwargs, packages)
 
     q = Meta.parse(expr)
     return q
@@ -108,3 +115,28 @@ function parse_using_functions(x)
     end
 end
 
+
+function parse_kwarg(arg)
+    arg isa Expr || return nothing
+    arg.head == :(=) || return nothing
+
+    kw = arg.args[1]
+    val = arg.args[2]
+    val isa Bool || error("Expected a boolean value for $kw")
+    return (; kw, val)
+end
+
+function parse_kwargs(args)
+    i = 0
+    kwargs = accepted_kwargs()
+    for arg in args
+        pk = parse_kwarg(arg)
+        isnothing(pk) && break
+        (; kw, val) = pk
+        kw = Symbol(kw)
+        hasproperty(kwargs, kw) || error("Unknown keyword $kw")
+        setproperty!(kwargs, kw, val)
+        i += 1
+    end
+    return (;kwargs, last_kwarg_index=i)
+end

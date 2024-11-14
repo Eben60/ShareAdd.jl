@@ -3,31 +3,6 @@
 
 
 
-function parse_kwarg(arg)
-    arg isa Expr || return nothing
-    @show arg.head #, arg.head == :(=)
-    arg.head == :(=) || return nothing
-
-    kw = arg.args[1]
-    val = arg.args[2]
-    val isa Bool || error("Expected a boolean value for $kw")
-    return (; kw, val)
-end
-
-function parse_kwargs(args)
-    i = 0
-    kwargs = accepted_kwargs()
-    for arg in args
-        pk = parse_kwarg(arg)
-        isnothing(pk) && break
-        (; kw, val) = pk
-        kw = Symbol(kw)
-        hasproperty(kwargs, kw) || error("Unknown keyword $kw")
-        setproperty!(kwargs, kw, val)
-        i += 1
-    end
-    return (;kwargs, last_kwarg_index=i)
-end
 
 
 macro prs(args...)

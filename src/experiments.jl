@@ -35,10 +35,6 @@ end
 
 
 macro prs(args...)
-    err_msg = """
-    Cannot make sense of `@usingany` arguments. 
-    If the error was NOT caused by a typo, and you believe you wrote a sensible syntax,
-    please check the docs of `@usingany` and `make_importable` """
 
     (;kwargs, last_kwarg_index) = parse_kwargs(args)
 
@@ -47,14 +43,16 @@ macro prs(args...)
     lastargs > 1 && error(err_msg)
 
     p = lastargs == 0 ? nothing : parse_usings(args[end])
+    (; packages, expr) = p
+
+    update_if_asked(packages)
 
     @show p, lastargs, kwargs
     return nothing
 end
 
-
-
 export @prs
+
 
 macro dsp(x)
     # @show x.head, x.args, x.args[3], typeof(x.args[3])

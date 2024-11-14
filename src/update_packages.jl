@@ -2,8 +2,8 @@
 """
     update_shared()
     update_shared(nm::AbstractString)
-    update_shared(nm::Vector{AbstractString})
-    update_shared(env::AbstractString, pkgs::Union{AbstractString, Vector{AbstractString}}) 
+    update_shared(nm::Vector{<:AbstractString})
+    update_shared(env::AbstractString, pkgs::Union{AbstractString, Vector{<:AbstractString}}) 
     update_shared(env::EnvInfo, pkgs::Union{Nothing, S, Vector{S}} = Nothing) where S <: AbstractString
 
 - Called with no arguments, updates all shared environments.
@@ -46,19 +46,26 @@ function update_shared(nm::AbstractString)
     return nothing
 end
 
-function update_shared(env::AbstractString, pkgs::Union{AbstractString, Vector{AbstractString}}) 
+function update_shared(env::AbstractString, pkgs::Union{AbstractString, Vector{<:AbstractString}}) 
     startswith(env, "@") || error("Name of shared environment must start with @")
     update_shared(getenvinfo(env), pkgs)
 end
 
-update_shared(nm::Vector{AbstractString}) = (update_shared.(nm); return nothing)
+update_shared(nm::Vector{<:AbstractString}) = (update_shared.(nm); return nothing)
 
-function update_if_asked(packages)
-    if kwargs.update_all 
+@kwdef mutable struct accepted_kwargs
+    update_pkg::Bool = false
+    update_env::Bool = false
+    update_all::Bool = false
+end
+
+function update_if_asked(flags, packages)
+    if flags.update_all 
         update_all()
-    elseif kwargs.update_env 
+    elseif flags.update_env 
         update_all_envs()
-    elseif kwargs.update_pkg
+    elseif flags.update_pkg
+        @show packages
         update_shared(packages)
     end
     return nothing

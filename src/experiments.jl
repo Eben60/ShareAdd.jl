@@ -1,10 +1,6 @@
 # @
 
-@kwdef mutable struct accepted_kwargs
-    update_pkg::Bool = false
-    update_env::Bool = false
-    update_all::Bool = false
-end
+
 
 
 function parse_kwarg(arg)
@@ -45,7 +41,7 @@ macro prs(args...)
     p = lastargs == 0 ? nothing : parse_usings(args[end])
     (; packages, expr) = p
 
-    update_if_asked(packages)
+    update_if_asked(kwargs, packages)
 
     @show p, lastargs, kwargs
     return nothing

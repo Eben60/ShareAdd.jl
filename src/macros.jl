@@ -11,7 +11,20 @@ Makes package(s) available, if they are not already, and loads them with `using`
 - Otherwise if package(s) can be installed, you will be prompted to select an environment to install each package.
 - If the package is not listed in any registry, an error will be thrown.
 
+The macro can also be called with keyword arguments:
+
+- `update_pkg::Bool`: if set to `true`, first updates the package(s) called by the macro
+- `update_env::Bool`: update the shared environments currently in the `LOAD_PATH`
+- `update_all::Bool`: update the current package as well as ALL shared environments 
+
 This macro is exported.
+
+# Examples
+```julia-repl
+julia> @usingany Foo, Bar
+julia> @usingany Baz: quux
+julia> @usingany update_pkg = true Qux
+```
 """
 macro usingany(args...)
     (;kwargs, last_kwarg_index) = parse_kwargs(args)
@@ -114,7 +127,6 @@ function parse_using_functions(x)
         return nothing
     end
 end
-
 
 function parse_kwarg(arg)
     arg isa Expr || return nothing

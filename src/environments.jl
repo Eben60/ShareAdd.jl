@@ -321,8 +321,6 @@ function make_importable(packages)
 
         isnothing(p2i) && return nothing
 
-        @show p2i
-
         install_shared(p2i, current_pr) 
 
         (; inshared_pkgs, installable_pkgs, unavailable_pkgs, shared_pkgs, current_pr) = check_packages(packages)
@@ -367,8 +365,6 @@ function install_shared(p2i::NamedTuple)
     else
         env2activate = env
     end
-
-    @show env2activate
 
     if isempty(env2activate) 
         Pkg.activate()

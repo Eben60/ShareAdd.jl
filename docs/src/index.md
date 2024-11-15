@@ -13,13 +13,20 @@ This Julia package is intended for interactive use. It exports the macro `@using
 - Otherwise if it can be installed, you will be prompted to select an environment to install the package(s).
 - If the package is not listed in any registry, an error will be thrown. 
 
+```
+# simplest usage case
+@usingany SomePackage
+```
+
 The package also exports several utility functions - see the [Exported functions](@ref) section.
 
 ## Usage example
 
-While working on your package `MyPackage` you may temporarily need packages `TOML`, `Plots`, and `Chairmarks`, which however you don't want to add to your package dependencies. You also need `Unitful`, which is already an installed dependence of `MyPackage`. `TOML` is available in the `stdlib`, `Plots` you already put into a shared environment `@utilities`, and `Chairmarks` is not on your computer yet. Furthermore, from the package `BenchmarkTools` (available from `@utilities` as well) we need only the macro `@btime` and the function `save`.
+Let's assume, while working on your package `MyPackage`, we temporarily need packages `TOML`, `Plots`, and `Chairmarks`. However, they shouldn't be added permanently to your package dependencies. Furthermore, from the package `BenchmarkTools` we need only the macro `@btime` and the function `save`. We also need `Unitful`, which is already an installed dependence of `MyPackage`.
 
-First, you add ShareAdd to your "main" (standard) enviroment, making it available at all times:
+`TOML` is available in the `stdlib`, `Plots` and `BenchmarkTools` you already put into a shared environment `@utilities`, and `Chairmarks` is not on your computer yet. 
+
+Now, first, you add ShareAdd to your "main" (standard) enviroment, making it available at all times:
 
 ```
 ]
@@ -34,7 +41,7 @@ First, you add ShareAdd to your "main" (standard) enviroment, making it availabl
 
 By that occasion you may also want to clean your standard environment: It is generally not recommended having a lot of packages there.
 
-Now, the only thing you need, is to type into REPL (or adding to your script) the following lines:
+Now, the only thing you need is to type into REPL (or adding to your script) the following lines:
 
 ```
 using ShareAdd
@@ -59,6 +66,15 @@ make_importable("Foo")
 import Foo
 ```
 
+It is possible to first update the packages and/or environments by setting the corresponding kwarg. E.g. the following would update the 
+packages `Pkg1`, `Pkg2` in their shared environments:
+
+```
+using ShareAdd
+@usingany update_pkg = true Pkg1, Pkg2
+```
+
+For usage options see [`@usingany` docs](@ref) .
 
 ## Likes & dislikes?
 

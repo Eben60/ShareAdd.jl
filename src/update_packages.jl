@@ -30,14 +30,18 @@ function update_shared()
     return nothing
 end
 
-function update_shared(nm::AbstractString)
+function update_shared(nm::AbstractString; ignore_missing=false)
     isenv = startswith(nm, "@")
     if isenv
         env = getenvinfo(nm)
         update_shared(env)
     else
         packages = list_shared_packages()
-        haskey(packages, nm) || error("Package $nm not found")
+        if !haskey(packages, nm) 
+            ignore_missing && return # covers the case when the package nm is in the current project and thus available - but not in any shared env
+            error("Package $nm not found")
+        end
+
         p = packages[nm]
         for env in p.envs
             update_shared(env, nm)
@@ -51,7 +55,7 @@ function update_shared(env::AbstractString, pkgs::Union{AbstractString, Vector{<
     update_shared(getenvinfo(env), pkgs)
 end
 
-update_shared(nm::Vector{<:AbstractString}) = (update_shared.(nm); return nothing)
+update_shared(nm::Vector{<:AbstractString}; ignore_missing=false) = (update_shared.(nm; ignore_missing); return nothing)
 
 @kwdef mutable struct accepted_kwargs
     update_pkg::Bool = false
@@ -65,8 +69,7 @@ function update_if_asked(flags, packages)
     elseif flags.update_env 
         update_all_envs()
     elseif flags.update_pkg
-        @show packages
-        update_shared(packages)
+        update_shared(packages; ignore_missing=true)
     end
     return nothing
 end

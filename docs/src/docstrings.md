@@ -31,9 +31,7 @@ Order   = [:function]
 Filter = t -> ! Base.ispublic(ShareAdd, Symbol(t))
 ```
 
-## Types
-
-All types are declared as `public`
+## Public types
 
 ```@autodocs
 Modules = [ShareAdd]

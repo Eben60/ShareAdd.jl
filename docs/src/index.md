@@ -57,7 +57,9 @@ Finally, the macros will execute `using Unitful, TOML, Plots, Chairmarks` resp. 
 
 ## Other functions and usage cases
 
-The function [`make_importable`](@ref) does what it's name says. It is used internally by [`@usingany`](@ref), but can be used separately e.g. 
+The functions [`list_shared_pkgs()`](@ref) and [`list_shared_envs()`](@ref) do what their names say.
+
+The function [`make_importable`](@ref) also does what it says. It is used internally by [`@usingany`](@ref), but can be used separately e.g. 
 if you e.g. want to import a package via `import` statement instead of `using`:
 
 ```
@@ -65,6 +67,8 @@ using ShareAdd
 make_importable("Foo")
 import Foo
 ```
+
+The functions [`list_shared_pkgs()`](@ref) and [`list_shared_envs()`](@ref) also do what they say.
 
 It is possible to first update the packages and/or environments by setting the corresponding kwarg. E.g. the following would update the 
 packages `Pkg1`, `Pkg2` in their shared environments:

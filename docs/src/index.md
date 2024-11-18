@@ -1,6 +1,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://eben60.github.io/ShareAdd.jl/) 
 [![Build Status](https://github.com/Eben60/ShareAdd.jl/workflows/CI/badge.svg)](https://github.com/Eben60/ShareAdd.jl/actions?query=workflow%3ACI) 
+[![Coverage](https://codecov.io/gh/Eben60/ShareAdd.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/Eben60/ShareAdd.jl) 
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
 
@@ -69,11 +70,11 @@ list_shared_pkgs("@SomeEnv") # return packages in the shared env "SomeEnv"
 list_shared_envs() # names of all shared envs
 ```
 ```
-list_shared_pkgs("SomePkg") # envs which contain the package "SomePkg"
+list_shared_envs("SomePkg") # envs which contain the package "SomePkg"
 ```
 
-The function [`make_importable`](@ref) also does what it says. It is used internally by [`@usingany`](@ref), but can be used separately e.g. 
-if you e.g. want to import a package via `import` statement instead of `using`:
+The function [`make_importable`](@ref) also does what it says. It is used internally by [`@usingany`](@ref), but it can also be used separately e.g. 
+if you want to import a package via `import` statement instead of `using`:
 
 ```
 using ShareAdd

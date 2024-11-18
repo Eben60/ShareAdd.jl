@@ -59,6 +59,11 @@ Finally, the macros will execute `using Unitful, TOML, Plots, Chairmarks` resp. 
 
 The functions [`list_shared_pkgs()`](@ref) and [`list_shared_envs()`](@ref) do what their names say.
 
+```
+list_shared_pkgs() # return packages in all shared envs except those in the the "main" one
+list_shared_pkgs("@SomeEnv") # return packages in the shared env "SomeEnv"
+```
+
 The function [`make_importable`](@ref) also does what it says. It is used internally by [`@usingany`](@ref), but can be used separately e.g. 
 if you e.g. want to import a package via `import` statement instead of `using`:
 
@@ -68,8 +73,6 @@ make_importable("Foo")
 import Foo
 ```
 
-The functions [`list_shared_pkgs()`](@ref) and [`list_shared_envs()`](@ref) also do what they say.
-
 It is possible to first update the packages and/or environments by setting the corresponding kwarg. E.g. the following would update the 
 packages `Pkg1`, `Pkg2` in their shared environments:
 
@@ -78,7 +81,7 @@ using ShareAdd
 @usingany update_pkg = true Pkg1, Pkg2
 ```
 
-For usage options see [`@usingany` docs](@ref) .
+For more usage options see [`@usingany` docs](@ref) .
 
 ## Likes & dislikes?
 

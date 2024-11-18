@@ -60,8 +60,16 @@ Finally, the macros will execute `using Unitful, TOML, Plots, Chairmarks` resp. 
 The functions [`list_shared_pkgs()`](@ref) and [`list_shared_envs()`](@ref) do what their names say.
 
 ```
-list_shared_pkgs() # return packages in all shared envs except those in the the "main" one
+list_shared_pkgs() # return names of packages in all shared envs except those in the the "main" one
+```
+```
 list_shared_pkgs("@SomeEnv") # return packages in the shared env "SomeEnv"
+```
+```
+list_shared_envs() # names of all shared envs
+```
+```
+list_shared_pkgs("SomePkg") # envs which contain the package "SomePkg"
 ```
 
 The function [`make_importable`](@ref) also does what it says. It is used internally by [`@usingany`](@ref), but can be used separately e.g. 

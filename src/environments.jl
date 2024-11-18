@@ -45,10 +45,18 @@ end
 
 """
     list_shared_envs() -> Vector{String}
+    list_shared_envs(pkg_name) -> Vector{String}
 
-Returns the names of all shared environments.
+Returns the names of all shared environments (if called without an argument), or 
+the environment(s) containing the package `pkg_name`.
 """
 list_shared_envs() = shared_environments_envinfos().shared_env_names
+
+function list_shared_envs(pkg_name)
+    pkgs = list_shared_packages()
+    haskey(pkgs, pkg_name) || error("Package $pkg_name not found")
+    return [e.name for e in list_shared_packages()[pkg_name].envs]
+end
 
 """
     list_shared_packages(;depot = first(DEPOT_PATH)) -> Dict{String, PackageInfo}

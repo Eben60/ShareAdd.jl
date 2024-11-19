@@ -73,8 +73,7 @@ list_shared_envs() # names of all shared envs
 list_shared_envs("SomePkg") # envs which contain the package "SomePkg"
 ```
 
-The function [`make_importable`](@ref) also does what it says. It is used internally by [`@usingany`](@ref), but it can also be used separately e.g. 
-if you want to import a package via `import` statement instead of `using`:
+The function [`make_importable`](@ref) also does what it says. It is used internally by [`@usingany`](@ref), but it can also be used separately in special cases, e.g. if you need `using A as B` syntax, or want to import a package via `import` statement instead of `using`:
 
 ```
 using ShareAdd

@@ -15,11 +15,11 @@ include("types.jl")
 include("optimset.jl")
 include("environments.jl")
 include("update_packages.jl")
-# include("temporary_envs.jl")
+include("temporary_envs.jl")
 # include("experiments.jl")
 include("macros.jl")
 
-export @usingany
+export @usingany, @usingtmp
 export delete_shared_env, delete_shared_pkg, list_shared_envs, list_shared_pkgs, reset_loadpath!, sh_add, update_shared, make_importable
 
 if VERSION >= v"1.11.0-DEV.469"

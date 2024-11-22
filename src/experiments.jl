@@ -1,10 +1,3 @@
-# @
-
-
-
-
-
-
 macro prs(args...)
 
     (;kwargs, last_kwarg_index) = parse_kwargs(args)
@@ -38,3 +31,25 @@ julia> @dsp Foo: @bar
 """
 
 export @dsp
+
+
+macro usingtmp()
+    activate_temp()
+end
+
+macro usingtmp(arg)
+
+
+    p = parse_usings(arg)
+    (; packages, expr) = p
+
+    activate_temp()
+    Pkg.add(packages)
+
+    # return nothing
+
+    q = Meta.parse(expr)
+    return q
+end
+
+export @usingtmp

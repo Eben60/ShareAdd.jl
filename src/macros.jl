@@ -43,6 +43,39 @@ macro usingany(args...)
     return q
 end
 
+"""
+    @usingtmp 
+    @usingtmp pkg
+    @usingtmp pkg1, pkg2, ... 
+    @usingtmp pkg: fn
+    @usingtmp pkg: fn, @mcr, ... 
+
+Activates a temporary environment, optionally installs packages into it and loads them with `using` keyword. 
+
+- If current environment is a temporary one, environment is not changed
+- If current env was a project (not package!), a temporary env will be activated
+- If current env was a package, e.g. `MyPkg`, a temporary env will be activated, AND `MyPkg` will be `dev`-ed in that temporary env.
+
+Afterwards, if `@usingtmp` was called with arguments, the corresponding packages will be installed into that temporary env, 
+and imported with `using` keyword.
+
+This macro is exported.
+"""
+macro usingtmp()
+    activate_temp()
+end
+
+macro usingtmp(arg)
+    p = parse_usings(arg)
+    (; packages, expr) = p
+
+    activate_temp()
+    Pkg.add(packages)
+
+    q = Meta.parse(expr)
+    return q
+end
+
 function parse_usings(x)
     err_msg = """
     Cannot make sense of `@usingany` arguments. 

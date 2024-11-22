@@ -7,7 +7,11 @@
 
 # ShareAdd.jl
 
-This Julia package is intended for interactive use. It exports the macro `@usingany`: This macro makes package(s) available, if they are not already, and loads them with `using` keyword.
+This Julia package is intended for interactive use, and it's aim is to help you in reducing clutter in your main shared environment, and thus avoid package incompatibility problems. It exports two macros: `@usingany` and `@usingtmp`, envisioned for two different workflows. The package also exports several [utility functions](@ref "Exported functions").
+
+## @usingany macro
+
+This macro makes package(s) available, if they are not already, and loads them with `using` keyword.
 
 - If a package is available in an environment in LOAD_PATH, that's OK.
 - If a package is available in a [shared environment](https://pkgdocs.julialang.org/v1/environments/#Shared-environments), this environment will be pushed into LOAD_PATH.
@@ -19,9 +23,7 @@ This Julia package is intended for interactive use. It exports the macro `@using
 @usingany SomePackage
 ```
 
-The package also exports several utility functions - see the [Exported functions](@ref) section.
-
-## Usage example
+### @usingany usage example
 
 Let's assume, while working on your package `MyPackage`, we temporarily need packages `TOML`, `Plots`, and `Chairmarks`. However, they shouldn't be added permanently to your package dependencies. Furthermore, from the package `BenchmarkTools` we need only the macro `@btime` and the function `save`. We also need `Unitful`, which is already an installed dependence of `MyPackage`.
 
@@ -55,6 +57,25 @@ As `Chairmarks` was not installed yet, you will be asked as to where to install 
 Afrerwards `@utilities` (and `@Chairmarks`, if created) will be added to `LOAD_PATH`, making their packages available.
 
 Finally, the macros will execute `using Unitful, TOML, Plots, Chairmarks` resp. `using BenchmarkTools: @btime, save` - and that's it. Enjoy!
+
+## @usingtmp macro
+
+This macro activates a temporary environment, optionally installs packages into it, and loads them with `using` keyword. 
+
+- If current environment is already a temporary one, environment is not changed.
+- If current env was a project (not package!), a temporary env will be activated.
+- If current env was a package (under development), e.g. `MyPkg`, a temporary env will be activated, AND `MyPkg` will be [dev](https://pkgdocs.julialang.org/v1/api/#Pkg.develop)-ed in that temporary env. 
+
+Thу last one is actually the interesting case, as you can continue to work on `MyPkg`, while temporarily having additional packages available.
+
+If `@usingtmp` was called with arguments, the corresponding packages will be installed into that temporary env, 
+and imported with `using` keyword.
+
+```
+using ShareAdd
+@usingtmp Foo, Bar
+@usingtmp Baz: quux
+```
 
 ## Other functions and usage cases
 

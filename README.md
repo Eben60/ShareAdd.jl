@@ -6,7 +6,7 @@
 
 # ShareAdd.jl
 
-This Julia package is intended for interactive use. It exports the macro `@usingany`: This macro makes package(s) available, if they are not already, and imports them with `using` keyword.
+This Julia package is intended for interactive use, and it's aim is to help you to reduce clutter in your main shared environment, and thus avoid package incompatibility problems. It exports two macros: `@usingany` and `@usingtmp`, envisioned for two different workflows.
 
 ## Documentation at 
 [https://eben60.github.io/ShareAdd.jl/](https://eben60.github.io/ShareAdd.jl/)

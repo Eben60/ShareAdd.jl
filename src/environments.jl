@@ -344,6 +344,16 @@ julia> using Foo: @bar # @usingany Foo: @bar is not a supported syntax
 ```
 """
 function make_importable(packages)
+    allloaded = true
+    for p in packages
+        p_sym = Symbol(p)
+        if !(isdefined(Main, p_sym) && getproperty(Main, p_sym) isa Module)
+            allloaded = false
+            break
+        end
+    end
+    allloaded && return :success
+
     (; inshared_pkgs, installable_pkgs, unavailable_pkgs, shared_pkgs, current_pr) = check_packages(packages)
     isempty(unavailable_pkgs) || error("The following packages are not available from any registry: $unavailable_pkgs")
 

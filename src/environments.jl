@@ -340,7 +340,7 @@ julia> import Foo
 julia> using ShareAdd
 julia> make_importable("Foo")
 :success
-julia> using Foo: @bar # @usingany Foo: @bar is not a supported syntax
+julia> using Foo: baz as bazaar # Foo: baz as bazaar is not a supported syntax
 ```
 """
 function make_importable(packages)

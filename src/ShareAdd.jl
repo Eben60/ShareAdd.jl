@@ -6,6 +6,8 @@ them with `using` keyword.
 - If a package is available in a shared environment, this environment will be pushed into `LOAD_PATH`.
 - Otherwise if package(s) can be installed, you will be prompted to select an environment to install each package.
 - If the package is not listed in any registry, an error will be thrown.
+
+Documentation under https://eben60.github.io/ShareAdd.jl/
 """
 module ShareAdd
 using TOML, Pkg

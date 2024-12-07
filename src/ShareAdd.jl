@@ -1,4 +1,6 @@
 """
+    Package ShareAdd v$(pkgversion(ShareAdd))
+
 This Julia package exports macro `@usingany`. This macro makes package(s) available, if they are not already, and loads 
 them with `using` keyword. 
 
@@ -8,6 +10,7 @@ them with `using` keyword.
 - If the package is not listed in any registry, an error will be thrown.
 
 Documentation under https://eben60.github.io/ShareAdd.jl/
+$(isnothing(get(ENV, "CI", nothing)) ? ("\n" * "Package local path: " * pathof(ShareAdd)) : "")
 """
 module ShareAdd
 using TOML, Pkg

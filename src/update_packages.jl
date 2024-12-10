@@ -22,6 +22,32 @@ function update_shared(env::EnvInfo, pkgs::Union{Nothing, AbstractString, Vector
     return nothing
 end
 
+versioned_mnf_supported() = VERSION >= v"1.11.0"
+
+function versioned_mnf_name()
+    versioned_mnf_supported() || return nothing
+    return "Manifest-v$(VERSION.major).$(VERSION.minor).toml"
+end
+
+function versioned_mnfs(path)
+    rx = r"manifest-v(\d+)\.(\d+)\.toml"
+    filenames = readdir(path) .|> lowercase
+    mnfs = filter(x -> startswith(x, rx), filenames)
+    vs = VersionNumber[]
+    for mn in mnfs
+        m = match(rx, mn)
+        v = VersionNumber("$(m[1]).$(m[2])")
+        push!(vs, v)
+    end
+    ("manifest.toml" in filenames) && push!(vs, v"1.0")
+    return vs
+end
+
+function has_current_mnf(path)
+    versioned_mnf_supported() && return isfile(joinpath(path, versioned_mnf_name()))
+    return isfile(joinpath(path, "Manifest.toml"))
+end
+
 function update_shared()
     envinfos = shared_environments_envinfos().shared_envs
     for env in envinfos

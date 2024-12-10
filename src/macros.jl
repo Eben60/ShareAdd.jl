@@ -31,14 +31,20 @@ macro usingany(args...)
     lastargs = length(args) - last_kwarg_index
     lastargs > 1 && error(err_msg)
 
-    p = lastargs == 0 ? nothing : parse_usings(args[end])
-    (; packages, expr) = p
+    (; packages, expr) = lastargs == 0 ? (; packages=nothing, expr=nothing) : parse_usings(args[end])
 
     mi = make_importable(packages)
     mi != :success && error("Some packages could not be installed")
 
+    if isnothing(packages)
+        kwargs == AcceptedKwargs() && throw(ArgumentError("No arguments were provided to `@usingany`"))
+        kwargs == AcceptedKwargs(update_pkg=true) && 
+            throw(ArgumentError("No package(s) were provided to `@usingany`, thus no information whicht env to update"))
+    end
+
     update_if_asked(kwargs, packages)
 
+    isnothing(expr) && return nothing
     q = Meta.parse(expr)
     return q
 end
@@ -173,7 +179,7 @@ end
 
 function parse_kwargs(args)
     i = 0
-    kwargs = accepted_kwargs()
+    kwargs = AcceptedKwargs()
     for arg in args
         pk = parse_kwarg(arg)
         isnothing(pk) && break

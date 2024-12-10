@@ -96,3 +96,7 @@ end
     @test ! ("ShareAdd" in stp)
 end
 
+@testset "usingany_throws" begin
+    @test_throws ArgumentError @macroexpand @usingany 
+    @test_throws ArgumentError @macroexpand @usingany update_pkg = true
+end

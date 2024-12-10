@@ -197,6 +197,7 @@ function list_env_pkgs(env_path)
     fl = joinpath(env_path, "Project.toml")
     isfile(fl) || return String[]
     project = TOML.parsefile(joinpath(env_path, "Project.toml"))
+    haskey(project, "deps") || return String[]
     return keys(project["deps"]) |> collect |> sort
 end
 
@@ -319,6 +320,7 @@ end
     make_importable(pkg::AbstractString)
     make_importable(pkgs::AbstractVector{<:AbstractString})
     make_importable(pkg1, pkg2, ...)
+    make_importable(::Nothing) => :success
 
 Checks  packages (by name only, UUIDs not supported!), prompts to install packages which are not in any shared environment, 
 and adds relevant shared environments to `LOAD_PATH`.
@@ -382,6 +384,8 @@ function make_importable(arg::AbstractString, args...)
     [arg, args...]
     return make_importable([arg, args...])
 end
+
+make_importable(::Nothing) = :success
 
 function install_shared(p2is::AbstractVector, current_pr)  
     for p2i in p2is

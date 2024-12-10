@@ -22,6 +22,11 @@ end
 
 function has_current_mnf(path)
     isdir(path) || return nothing
+
+    "v$(VERSION.major).$(VERSION.minor)" == 
+        (path |> abspath |> splitpath)[end] |> lowercase && # this is the "main" environment
+        return true
+
     versioned_mnf_supported() && return isfile(joinpath(path, versioned_mnf_name()))
     return isfile(joinpath(path, "Manifest.toml"))
 end
@@ -38,6 +43,18 @@ end
 
 create_empty_mnf(path) = (joinpath(path, versioned_mnf_name()) |> touch; println("touch"); return nothing)
 
+"""
+    make_current_mnf(path)
+    make_current_mnf(env::EnvInfo)    
+
+- If currently executed Julia version doesn't support versioned manifests, do nothing.
+- Else, if a versioned manifest for current Julia already exists, do nothing.
+- Else, is a (versioned) manifest for an older Julia exists in the given directory, copy it to a file 
+named according to the current Julia version, e.g. `Manifest-v1.11.toml`.
+- Else, create empty one.
+
+This function is public, not exported.
+"""
 function make_current_mnf(path)
     isdir(path) || error("Path $path is not a directory")
     versioned_mnf_supported() || return nothing
@@ -67,6 +84,7 @@ Returnes `nothing`.
 """
 function update_shared(env::EnvInfo, pkgs::Union{Nothing, AbstractString, Vector{<:AbstractString}} = nothing) 
     curr_env = current_env()
+    # make_current_mnf(env) # for the next commit
     Pkg.activate(env.path)
     isnothing(pkgs) ? Pkg.update() : Pkg.update(pkgs)
     Pkg.activate(curr_env.path)

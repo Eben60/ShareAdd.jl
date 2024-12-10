@@ -1,3 +1,54 @@
+versioned_mnf_supported(v = VERSION) = v >= v"1.11.0"
+
+function versioned_mnf_name(v = VERSION)
+    versioned_mnf_supported() || return nothing
+    return "Manifest-v$(v.major).$(v.minor).toml"
+end
+
+function versioned_mnfs(path)
+    rx = r"manifest-v(\d+)\.(\d+)\.toml"
+    filenames = readdir(path) .|> lowercase
+    mnfs = filter(x -> startswith(x, rx), filenames)
+    vs = VersionNumber[]
+    for mn in mnfs
+        m = match(rx, mn)
+        v = VersionNumber("$(m[1]).$(m[2])")
+        push!(vs, v)
+    end
+    ("manifest.toml" in filenames) && push!(vs, v"1.0")
+    sort!(vs)
+    return vs
+end
+
+function has_current_mnf(path)
+    isdir(path) || return nothing
+    versioned_mnf_supported() && return isfile(joinpath(path, versioned_mnf_name()))
+    return isfile(joinpath(path, "Manifest.toml"))
+end
+
+function copy_mnf(path)
+    mnfs = versioned_mnfs(path)
+    i = searchsortedlast(mnfs, VERSION)
+    i == 0 && (create_empty_mnf(path); return nothing)
+    src_mnf = joinpath(path, mnfs[i] == v"1.0" ? "Manifest.toml" : versioned_mnf_name(mnfs[i]))
+    dst_mnf = joinpath(path, versioned_mnf_name())
+    cp(src_mnf, dst_mnf)
+    return nothing
+end
+
+create_empty_mnf(path) = (joinpath(path, versioned_mnf_name()) |> touch; println("touch"); return nothing)
+
+function make_current_mnf(path)
+    isdir(path) || error("Path $path is not a directory")
+    versioned_mnf_supported() || return nothing
+    has_current_mnf(path) && return nothing
+    mnfs = versioned_mnfs(path)
+    length(mnfs) == 0 && return create_empty_mnf(path)
+    return copy_mnf(path)
+end
+
+make_current_mnf(env::EnvInfo) = make_current_mnf(env.path)
+export make_current_mnf #TODO remove export later on 
 
 """
     update_shared()
@@ -20,32 +71,6 @@ function update_shared(env::EnvInfo, pkgs::Union{Nothing, AbstractString, Vector
     isnothing(pkgs) ? Pkg.update() : Pkg.update(pkgs)
     Pkg.activate(curr_env.path)
     return nothing
-end
-
-versioned_mnf_supported() = VERSION >= v"1.11.0"
-
-function versioned_mnf_name()
-    versioned_mnf_supported() || return nothing
-    return "Manifest-v$(VERSION.major).$(VERSION.minor).toml"
-end
-
-function versioned_mnfs(path)
-    rx = r"manifest-v(\d+)\.(\d+)\.toml"
-    filenames = readdir(path) .|> lowercase
-    mnfs = filter(x -> startswith(x, rx), filenames)
-    vs = VersionNumber[]
-    for mn in mnfs
-        m = match(rx, mn)
-        v = VersionNumber("$(m[1]).$(m[2])")
-        push!(vs, v)
-    end
-    ("manifest.toml" in filenames) && push!(vs, v"1.0")
-    return vs
-end
-
-function has_current_mnf(path)
-    versioned_mnf_supported() && return isfile(joinpath(path, versioned_mnf_name()))
-    return isfile(joinpath(path, "Manifest.toml"))
 end
 
 function update_shared()

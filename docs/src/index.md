@@ -9,7 +9,7 @@
 
 This Julia package is intended for interactive use, and it's aim is to help you in reducing clutter in your main shared environment, and thus avoid package incompatibility problems. It exports two macros: `@usingany` and `@usingtmp`, envisioned for two different workflows. The package also exports several [utility functions](@ref "Exported functions").
 
-## @usingany macro
+## `@usingany` macro
 
 This macro makes package(s) available, if they are not already, and loads them with `using` keyword.
 
@@ -23,7 +23,9 @@ This macro makes package(s) available, if they are not already, and loads them w
 @usingany SomePackage
 ```
 
-### @usingany usage example
+For more usage options see [`@usingany` docs](@ref) .
+
+### `@usingany` usage example
 
 Let's assume, while working on your package `MyPackage`, we temporarily need packages `TOML`, `Plots`, and `Chairmarks`. However, they shouldn't be added permanently to your package dependencies. Furthermore, from the package `BenchmarkTools` we need only the macro `@btime` and the function `save`. We also need `Unitful`, which is already an installed dependence of `MyPackage`.
 
@@ -34,11 +36,11 @@ Now, first, you add ShareAdd to your "main" (standard) enviroment, making it ava
 ```
 ]
 (YourEnv) pkg> activate 
-  Activating project at `~/.julia/environments/v1.10`
+  Activating project at `~/.julia/environments/v1.11`
 
-(@v1.10) pkg> add ShareAdd
+(@v1.11) pkg> add ShareAdd
 (...)
-(@v1.10) pkg> activate . # back to your environment
+(@v1.11 pkg> activate . # back to your environment
 (YourEnv) pkg> 
 ```
 
@@ -58,7 +60,25 @@ Afrerwards `@utilities` (and `@Chairmarks`, if created) will be added to `LOAD_P
 
 Finally, the macros will execute `using Unitful, TOML, Plots, Chairmarks` resp. `using BenchmarkTools: @btime, save` - and that's it. Enjoy!
 
-## @usingtmp macro
+### `@usingany` with updates
+
+It is possible to first update the packages and/or environments by setting the corresponding kwarg. E.g. the following would update the 
+packages `Pkg1`, `Pkg2` in their shared environments:
+
+```
+using ShareAdd
+@usingany update_pkg = true Pkg1, Pkg2
+```
+
+### `@usingany` without explicitly calling `@usingany`
+
+`ShareAdd.jl` can be combined nicely with [`BasicAutoloads.jl`](https://juliahub.com/ui/Packages/General/BasicAutoloads). See this [Discourse post](https://discourse.julialang.org/t/ann-shareadd-jl-making-easy-to-import-packages-from-multiple-environments/121261/3?u=eben60) to learn how get packages silently loaded if you call their functions in the REPL - e.g. if you type `mean([1,2,3])` or `1.55u"V"`. 
+
+## Versioned manifests
+
+If currently used Julia version supports [versioned manifests](https://pkgdocs.julialang.org/v1/toml-files/#Different-Manifests-for-Different-Julia-versions) (i.e. >= v1.11), then on any updates using macros or functions (see [`update_shared`](@ref)) of the `ShareAdd` package, a versioned manifest will be created in each updated env. The function [`make_current_mnf`](@ref) can be used to create a versioned manifest in a specified environment without updating it.
+
+## `@usingtmp` macro
 
 This macro activates a temporary environment, optionally installs packages into it, and loads them with `using` keyword. 
 
@@ -101,16 +121,6 @@ using ShareAdd
 make_importable("Foo")
 import Foo
 ```
-
-It is possible to first update the packages and/or environments by setting the corresponding kwarg. E.g. the following would update the 
-packages `Pkg1`, `Pkg2` in their shared environments:
-
-```
-using ShareAdd
-@usingany update_pkg = true Pkg1, Pkg2
-```
-
-For more usage options see [`@usingany` docs](@ref) .
 
 ## Likes & dislikes?
 

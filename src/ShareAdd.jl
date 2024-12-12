@@ -24,7 +24,8 @@ include("temporary_envs.jl")
 include("macros.jl")
 
 export @usingany, @usingtmp
-export delete_shared_env, delete_shared_pkg, list_shared_envs, list_shared_pkgs, reset_loadpath!, sh_add, update_shared, make_importable
+export delete_shared_env, delete_shared_pkg, list_shared_envs, list_shared_pkgs, 
+    make_current_mnf, make_importable, reset_loadpath!, sh_add, update_shared
 
 if VERSION >= v"1.11.0-DEV.469"
     include("public.julia")

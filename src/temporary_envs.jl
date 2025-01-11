@@ -35,4 +35,3 @@ function activate_temp()
 
     return nothing
 end
-export activate_temp

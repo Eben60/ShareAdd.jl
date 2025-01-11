@@ -14,12 +14,12 @@ Makes package(s) available, if they are not already, and loads them with `using`
 
 The macro can be called with keyword arguments:
 
-- `update_pkg::Bool`: if set to `true`, first updates the package(s) called by the macro
-- `update_env::Bool`: update the shared environments currently in the `LOAD_PATH`
-- `update_all::Bool`: update the current package as well as ALL shared environments
+- `update_pkg::Bool`: if set to `true`, first updates the package(s) to be imported by the macro
+- `update_env::Bool`: first update the shared environments currently in the `LOAD_PATH`
+- `update_all::Bool`: first update the package to be imported in ALL shared environments where it is present
 
 If Julia version supports versioned manifests, on any updates a versioned manifest will be created in each updated env.
-See also [`make_current_mnf`](@ref) and [`update_shared`](@ref).
+See also [`make_current_mnf`](@ref) and [`update`](@ref).
 
 If `update_all` or `update_env` kwarg is set, `@usingany` can be called without specifying any package(s) for import. 
 If `update_pkg` kwarg is set, package(s) to import must be specified.

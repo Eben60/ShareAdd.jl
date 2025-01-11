@@ -7,7 +7,8 @@ makedocs(
     sitename = "ShareAdd.jl",
     pages = Any[
         "General Info" => "index.md", 
-        "Docstrings" => "docstrings.md"
+        "Changelog, License etc." => "finally.md", 
+        "Internal functions and Index" => "docstrings.md",
         ],
     checkdocs = :exports, 
     warnonly = [:missing_docs],

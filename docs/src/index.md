@@ -7,7 +7,7 @@
 
 # ShareAdd.jl
 
-This Julia package is intended for interactive use, and it's aim is to help you in reducing clutter in your main shared environment, and thus avoid package incompatibility problems. It exports two macros: `@usingany` and `@usingtmp`, envisioned for two different workflows. The package also exports several [utility functions](@ref "Exported functions").
+This Julia package is intended for interactive use, and it's aim is to help you in reducing clutter in your main shared environment, and thus avoid package incompatibility problems. It exports two macros: [`@usingany`](@ref) and [`@usingtmp`](@ref), envisioned for two different workflows. The package also provides several [utility functions](@ref "Some other functions and usage cases") for managing shared environments.
 
 ## `@usingany` macro
 
@@ -62,8 +62,7 @@ Finally, the macros will execute `using Unitful, TOML, Plots, Chairmarks` resp. 
 
 ### `@usingany` with updates
 
-It is possible to first update the packages and/or environments by setting the corresponding kwarg. E.g. the following would update the 
-packages `Pkg1`, `Pkg2` in their shared environments:
+By setting the corresponding kwarg, it is possible to first update the packages and/or environments prior to execution of import. E.g. the following command would update the packages `Pkg1`, `Pkg2` in their shared environments:
 
 ```
 using ShareAdd
@@ -76,7 +75,7 @@ using ShareAdd
 
 ## Versioned manifests
 
-If currently used Julia version supports [versioned manifests](https://pkgdocs.julialang.org/v1/toml-files/#Different-Manifests-for-Different-Julia-versions) (i.e. >= v1.11), then on any updates using macros or functions (see [`update_shared`](@ref)) of the `ShareAdd` package, a versioned manifest will be created in each updated env. The function [`make_current_mnf`](@ref) can be used to create a versioned manifest in a specified environment without updating it.
+If currently used Julia version supports [versioned manifests](https://pkgdocs.julialang.org/v1/toml-files/#Different-Manifests-for-Different-Julia-versions) (i.e. >= v1.11), then on any updates using `ShareAdd` package (see [`ShareAdd.update`](@ref)), a versioned manifest will be created in each updated env. The function [`ShareAdd.make_current_mnf`](@ref) can also be used to create a versioned manifest in a specified environment without updating it.
 
 ## `@usingtmp` macro
 
@@ -97,24 +96,11 @@ using ShareAdd
 @usingtmp Baz: quux
 ```
 
-## Other functions and usage cases
+## Some other functions and usage cases
 
-The functions [`list_shared_pkgs()`](@ref) and [`list_shared_envs()`](@ref) do what their names say.
+The functions [`ShareAdd.info()`](@ref), [`ShareAdd.update()`](@ref), [`ShareAdd.delete()`](@ref) do what their names say.
 
-```
-list_shared_pkgs() # return names of packages in all shared envs except those in the the "main" one
-```
-```
-list_shared_pkgs("@SomeEnv") # return packages in the shared env "SomeEnv"
-```
-```
-list_shared_envs() # names of all shared envs
-```
-```
-list_shared_envs("SomePkg") # envs which contain the package "SomePkg"
-```
-
-The function [`make_importable`](@ref) also does what it says. It is used internally by [`@usingany`](@ref), but it can also be used separately in special cases, e.g. if you need `using A as B` syntax, or want to import a package via `import` statement instead of `using`:
+The function [`ShareAdd.make_importable`](@ref) also does what it says. It is used internally by [`@usingany`](@ref), but it can also be used separately in special cases, e.g. if you need `using A as B` syntax, or want to import a package via `import` statement instead of `using`:
 
 ```
 using ShareAdd
@@ -122,19 +108,27 @@ make_importable("Foo")
 import Foo
 ```
 
-## Likes & dislikes?
+## Reference
 
-Star on GitHub, open an issue, contact me on Julia Discourse.
+### Exported macros
 
-## Credits
+```@autodocs
+Modules = [ShareAdd]
+Order   = [:macro, ]
+```
 
-Some code and inspiration from [EnvironmentMigrators.jl](https://github.com/mkitti/EnvironmentMigrators.jl) by Mark Kittisopikul. 
+### Public types
 
-The AI from [Codeium](https://codeium.com/) helped me and bugged me (pun intended).
+```@autodocs
+Modules = [ShareAdd]
+Order   = [:type, ]
+Filter = t -> (! Base.isexported(ShareAdd, nameof(t)) && Base.ispublic(ShareAdd, nameof(t)))
+```
 
-## Copyright and License
+### Public functions
 
-© 2024 Eben60
-
-MIT License (see separate file `LICENSE`)
-
+```@autodocs
+Modules = [ShareAdd]
+Order   = [:function]
+Filter = t -> (! Base.isexported(ShareAdd, nameof(t)) && Base.ispublic(ShareAdd, nameof(t)))
+```

@@ -1,2 +1,2 @@
-public shared_environments_envinfos, list_shared_packages, env_path, check_packages, current_env
-public EnvInfo, PackageInfo, EnvSet, OptimSet
+public current_env, delete, info, make_current_mnf, make_importable, reset, sh_add, update, EnvInfo, PackageInfo
+

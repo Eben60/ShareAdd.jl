@@ -4,43 +4,47 @@ is_minor_version(v1::VersionNumber, v2::VersionNumber) =
 
 """
     shared_environments_envinfos(; depot = first(DEPOT_PATH)) -> 
-        (; shared_envs::Vector{EnvInfo},
+        (; shared_envs::Dict{name, EnvInfo},
         envs_folder_path::String, 
         shared_env_names::Vector{String})
 
 """
-function shared_environments_envinfos(; depot = first(DEPOT_PATH))
+function shared_environments_envinfos(; std_lib=false, depot = first(DEPOT_PATH))
     envs_folder_path = joinpath(depot, "environments")
-    j_env = nothing
-    shared_envs = EnvInfo[]
+    shared_envs = Dict{String, EnvInfo}()
 
-    if !isdir(envs_folder_path)
-        return (; shared_envs=String[], envs_folder_path=nothing, shared_env_names=String[])
-    else
-        env_dirlist = readdir(envs_folder_path)
-        envs = [s for s in env_dirlist if isdir(joinpath(envs_folder_path, s))]
-        for env in envs
-            standard_env = false
-            in_path = ("@$(env)" in LOAD_PATH)
-            v = tryparse(VersionNumber, env) 
-            if !isnothing(v) 
-                if is_minor_version(VERSION, v) 
-                    in_path = true
-                    standard_env = true
-                else
-                    continue
-                end
+    isdir(envs_folder_path) || error("Environment folder $envs_folder_path not found")  
+
+    env_dirlist = readdir(envs_folder_path)
+    envs = [s for s in env_dirlist if isdir(joinpath(envs_folder_path, s))]
+    for env in envs
+        standard_env = false
+        in_path = ("@$(env)" in LOAD_PATH)
+        v = tryparse(VersionNumber, env) 
+        if !isnothing(v) 
+            if is_minor_version(VERSION, v) 
+                in_path = true
+                standard_env = true
+            else
+                continue
             end
-            path = joinpath(envs_folder_path, env)
-            pkgs = list_env_pkgs(path) |> Set
-            envinfo = EnvInfo(; name = env, path, pkgs, in_path, standard_env, shared = true, temporary = false, active_project = false)
-            push!(shared_envs, envinfo)
         end
-
-        !isnothing(j_env) && push!(shared_envs, j_env)
-        shared_env_names = [s.name for s in shared_envs]
-        return (; shared_envs, envs_folder_path, shared_env_names)
+        path = joinpath(envs_folder_path, env)
+        pkgs = list_env_pkgs(path) |> Set
+        envinfo = EnvInfo(; name = env, path, pkgs, in_path, standard_env, shared = true, temporary = false, active_project = false)
+        shared_envs[envinfo.name] = envinfo
     end
+
+    shared_env_names = shared_envs |> keys |> collect |> sort!
+
+    if std_lib 
+        stdl = stdlib_env()
+        shared_envs[stdl.name] = stdl
+        append!(shared_env_names, stdl.pkgs)
+        sort!(shared_env_names)
+    end
+
+    return (; shared_envs, envs_folder_path, shared_env_names)
 end
 
 """
@@ -50,21 +54,21 @@ end
 Returns the names of all shared environments (if called without an argument), or 
 the environment(s) containing the package `pkg_name`.
 """
-list_shared_envs() = shared_environments_envinfos().shared_env_names
+list_shared_envs(; std_lib = false) = shared_environments_envinfos(;std_lib).shared_env_names
 
-function list_shared_envs(pkg_name)
-    pkgs = list_shared_packages()
-    haskey(pkgs, pkg_name) || error("Package $pkg_name not found")
-    return [e.name for e in list_shared_packages()[pkg_name].envs]
+function list_shared_envs(pkg_name; std_lib = false)
+    pkgs = list_shared_packages(; std_lib)
+    haskey(pkgs, pkg_name) || return String[]
+    return [e.name for e in list_shared_packages(;std_lib)[pkg_name].envs]
 end
 
 """
     list_shared_packages(;depot = first(DEPOT_PATH)) -> Dict{String, PackageInfo}
 """
-function list_shared_packages(; depot = first(DEPOT_PATH))
+function list_shared_packages(; std_lib = false, depot = first(DEPOT_PATH))
     (; shared_envs, ) = shared_environments_envinfos(; depot)
     packages = Dict{String, PackageInfo}()
-    for env in shared_envs
+    for env in shared_envs |> values
         pks = shared_packages(env.name; depot, skipfirstchar = false)
         for pk in pks
             if !haskey(packages, pk)
@@ -79,20 +83,30 @@ function list_shared_packages(; depot = first(DEPOT_PATH))
         end
     end
 
-    # add packages in @stdlib
-    std_pcks = stdlib_packages()
-    for pk in std_pcks
-        packages[pk] = PackageInfo(pk, EnvInfo[], true, true)
+    if std_lib
+        std_env = stdlib_env()
+        std_pcks = std_env.pkgs
+        for pk in std_pcks
+            if haskey(packages, pk)
+                pkg = packages[pk]
+                pkg.in_path = true
+                pkg.in_stdlib = true
+                push!(pkg.envs, std_env)
+            else
+                packages[pk] = PackageInfo(pk, [std_env], true, true)
+            end
+        end
     end
+    
     return packages
 end
 
 """
-    list_shared_pkgs(; all=false) -> Vector{String}
+    list_shared_pkgs(; std_lib=false) -> Vector{String}
     list_shared_pkgs(env_name) -> Vector{String}
 
 Returns the names of packages in all shared environments, or in given environment. 
-If `all=true`, also includes packages in @stdlib.
+If `std_lib=true`, also includes packages in @stdlib.
 
 # Examples
 ```julia-repl
@@ -111,10 +125,9 @@ julia> list_shared_pkgs("@Qu")
 
 ```
 """
-function list_shared_pkgs(; all=false)
-    packages = list_shared_packages()
-    all && return collect(keys(packages)) |> sort
-    return collect(keys(filter(p -> !p.second.in_stdlib, packages))) |> sort
+function list_shared_pkgs(; std_lib=false)
+    packages = list_shared_packages(;std_lib)
+    return packages |> keys |> collect |> sort!
 end
 
 function list_shared_pkgs(env_name)
@@ -170,6 +183,8 @@ julia> sh_add("@StatPackages", "@Makie")
  "DataFrames"
  "Makie"
 ```
+
+This function is public, not exported.
 """
 function sh_add(env_name::AbstractString; depot = first(DEPOT_PATH))
     is_shared_environment(env_name, depot) || error("Environment $env_name is not a shared environment")
@@ -213,6 +228,12 @@ function stdlib_packages()
     return pkgs
 end
 
+function stdlib_env()
+    pkgs = stdlib_packages() |> Set
+    env = EnvInfo(; name = "stdlib", path = Sys.STDLIB, pkgs, in_path = true, standard_env = true, shared = true, temporary = false, active_project = false)
+    return env
+end
+
 """
     check_packages(packages; depot = first(DEPOT_PATH)) -> NamedTuple
 
@@ -228,7 +249,7 @@ Returns a NamedTuple with the following fields:
 - `current_pr`: information about the current environment as `@NamedTuple{name::String, shared::Bool}`
 """
 function check_packages(packages; depot = first(DEPOT_PATH)) # packages::AbstractVector{<:AbstractString}
-    shared_pkgs = list_shared_packages(; depot)
+    shared_pkgs = list_shared_packages(; std_lib=true, depot)
     current_pr = current_env()
 
     inpath_pkgs = String[]
@@ -262,11 +283,13 @@ check_packages(package::AbstractString; depot = first(DEPOT_PATH)) = check_packa
     current_env(; depot = first(DEPOT_PATH)) -> EnvInfo
 
 Returns information about the current active environment as an `EnvInfo` object.
+
+This function is public, not exported.
 """
 function current_env(; depot = first(DEPOT_PATH))
-    shared_envs = shared_environments_envinfos(; depot)
+    (; shared_envs) = shared_environments_envinfos(; depot)
 
-    shared_env_paths = [env.path for env in shared_envs.shared_envs]
+    shared_env_paths = [env.path for env in shared_envs |> values]
 
 
     pr = Base.active_project()
@@ -284,7 +307,7 @@ function current_env(; depot = first(DEPOT_PATH))
     is_shared = curr_pr_path in shared_env_paths
 
     if is_shared
-        for e in shared_envs.shared_envs
+        for e in shared_envs |> values
             if e.path == curr_pr_path
                 env = copy(e)
                 env.active_project = true
@@ -344,6 +367,8 @@ julia> make_importable("Foo")
 :success
 julia> using Foo: bazaar as baz  # @usingany Foo: bazaar as baz is not a supported syntax
 ```
+
+This function is public, not exported.
 """
 function make_importable(packages)
     allloaded = true
@@ -475,6 +500,7 @@ function prompt2install(packages::AbstractVector{<:AbstractString})
 end
 
 function prompt2install(new_package::AbstractString; envs = shared_environments_envinfos().shared_envs)
+    envs isa Dict && (envs = envs |> values |> collect)
     currproj = current_env()
     currproj.shared || push!(envs, currproj)
 
@@ -498,76 +524,9 @@ function prompt2install(new_package::AbstractString; envs = shared_environments_
     end
 end
 
-
-"""
-    reset_loadpath!()
-
-Resets the LOAD_PATH to the default values: removes any manually added paths, and resets the load path to the standard
-values of ["@", "@v#.#", "@stdlib"]. 
-"""
-function reset_loadpath!()
-    default_paths = ["@", "@v#.#", "@stdlib"]
-    empty!(LOAD_PATH)
-    append!(LOAD_PATH, default_paths)
-    return nothing  
-end
-
-"""
-    delete_shared_env(env::Union{AbstractString, EnvInfo})
-
-Deletes the shared environment `env` by erasing it's directory.
-
-Returns `nothing`.
-"""
-delete_shared_env(e::EnvInfo) = (rm(e.path; recursive=true); return nothing)
-
-function delete_shared_env(s::AbstractString)
-    startswith(s, "@") || error("Name of shared environment must start with @")
-    s = s[2:end]
-
-    for env in shared_environments_envinfos().shared_envs
-        env.name == s && return delete_shared_env(env)
-    end
-
-    error("Shared environment $s not found")
-end
-
-"""
-    delete_shared_pkg(pkg::AbstractString)
-
-Deletes the package `pkg` from it's shared environment. Deletes this environment if it was the only package there.
-If the package is present in multiple environments, it will not be deleted and an error will be thrown, suggesting you do it manually.
-
-Returns `nothing`.
-"""
-function delete_shared_pkg(s::AbstractString)
-    curr_env = current_env()
-    pkinfos = list_shared_packages()
-    haskey(pkinfos, s) || error("Package $s not found")
-
-    p = pkinfos[s]
-
-    p.in_path && error("Package $s is in path. Remove it's environment form the path first.")
-    
-    length(p.envs) > 1 && error("Package $s is present in multiple environments $([env.name for env in p.envs]). Remove it manually.")
-    e = p.envs[1]
-
-    onlyone = length(e.pkgs) == 1
-
-    Pkg.activate(e.path)
-    Pkg.rm(s)
-    Pkg.activate(curr_env.path)
-    onlyone && delete_shared_env(e)
-
-    return nothing
-end
-
 function getenvinfo(nm::AbstractString)
-    isenv = startswith(nm, "@")
-    isenv || error("Name of shared environment must start with @")
+    startswith(nm, "@") || error("Name of shared environment must start with @")
     nm = nm[2:end]
-    (; shared_envs, shared_env_names) = shared_environments_envinfos()
-    nm in shared_env_names || error("Shared environment $nm not found")
-    env = shared_envs[findfirst(x -> x.name == nm, shared_envs)]
-    return env
+    return shared_environments_envinfos().shared_envs[nm]
 end
+

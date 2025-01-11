@@ -20,15 +20,21 @@ function versioned_mnfs(path)
     return vs
 end
 
+is_main_env(path) = 
+    "v$(VERSION.major).$(VERSION.minor)" == (path |> abspath |> splitpath)[end] |> lowercase
+
 function has_current_mnf(path)
     isdir(path) || return nothing
-
-    "v$(VERSION.major).$(VERSION.minor)" == 
-        (path |> abspath |> splitpath)[end] |> lowercase && # this is the "main" environment
-        return true
-
+    is_main_env(path) && return true
     versioned_mnf_supported() && return isfile(joinpath(path, versioned_mnf_name()))
     return isfile(joinpath(path, "Manifest.toml"))
+end
+
+function current_mnf(path)
+    isdir(path) || return nothing
+    (is_main_env(path) || ! versioned_mnf_supported() ) && 
+        return joinpath(path, "Manifest.toml")
+    return joinpath(path, versioned_mnf_name())
 end
 
 function copy_mnf(path)
@@ -38,35 +44,43 @@ function copy_mnf(path)
     src_mnf = joinpath(path, mnfs[i] == v"1.0" ? "Manifest.toml" : versioned_mnf_name(mnfs[i]))
     dst_mnf = joinpath(path, versioned_mnf_name())
     cp(src_mnf, dst_mnf)
-    return nothing
+    return dst_mnf
 end
 
-create_empty_mnf(path) = (joinpath(path, versioned_mnf_name()) |> touch; println("touch"); return nothing)
+function create_empty_mnf(path) 
+    p = joinpath(path, versioned_mnf_name()) |> touch; 
+    return p
+end
 
 """
-    make_current_mnf(path_or_name)
-    make_current_mnf(env::EnvInfo)
-    make_current_mnf(; current::Bool)
+    make_current_mnf(path_or_name) -> path
+    make_current_mnf(; current::Bool) -> path
+    make_current_mnf(env::EnvInfo) -> path
+
+Creates a [versioned manifest](https://pkgdocs.julialang.org/v1/toml-files/#Different-Manifests-for-Different-Julia-versions)
 
 If called `make_current_mnf(; current=true)`, the current environment will be processed by this function. 
 
 `path_or_name` can name of a shared environment starting with `@`, or a path to any environment.
 
-- If currently executed Julia version doesn't support versioned manifests, do nothing.
+- If currently executed Julia version doesn't support version-specific manifests, do nothing.
 - Else, if a versioned manifest for current Julia already exists, do nothing.
-- Else, is a (versioned) manifest for an older Julia exists in the given directory, copy it to a file 
-named according to the current Julia version, e.g. `Manifest-v1.11.toml`.
+- Else, if the environment is the main shared env for the current Julia version (e.g. "@v1.11" for Julia v1.11), do nothing.
+- Else, is a (versioned) manifest for an older Julia exists in the given directory, copy it to a file named according to the current Julia version, e.g. `Manifest-v1.11.toml`.
 - Else, create empty one.
+
+Returns path to the created or existing manifest.
+
+This function is public, not exported.
 """
 function make_current_mnf(p)
     startswith(p, "@") && (p = env_path(p))
     isdir(p) || error("Path $p is not a directory")
-    versioned_mnf_supported() || return nothing
-    has_current_mnf(p) && return nothing
+    versioned_mnf_supported() || return current_mnf(p)
+    has_current_mnf(p) && return current_mnf(p)
     mnfs = versioned_mnfs(p)
-    length(mnfs) == 0 && return create_empty_mnf(p)
-    copy_mnf(p)
-    return nothing
+    length(mnfs) == 0 && return create_empty_mnf(p) 
+    return copy_mnf(p) 
 end
 
 make_current_mnf(env::EnvInfo) = make_current_mnf(env.path)
@@ -78,68 +92,81 @@ function make_current_mnf(; current::Bool)
 end
 
 """
-    update_shared()
-    update_shared(nm::AbstractString)
-    update_shared(nm::Vector{<:AbstractString})
-    update_shared(env::AbstractString, pkgs::Union{AbstractString, Vector{<:AbstractString}}) 
-    update_shared(env::EnvInfo, pkgs::Union{Nothing, S, Vector{S}} = Nothing) where S <: AbstractString
+    update()
+    update(nm::AbstractString)
+    update(nm::Vector{<:AbstractString})
+    update(env::AbstractString, pkgs::Union{AbstractString, Vector{<:AbstractString}}) 
+    update(env::EnvInfo, pkgs::Union{Nothing, S, Vector{S}} = Nothing) where S <: AbstractString
 
 - Called with no arguments, updates all shared environments.
-- Called with a single argument `nm::String` starting with "@", updates the environment `nm` (if it exists).
+- Called with a single argument `nm::String` starting with "@", updates the shared environment `nm`.
 - Called with a single argument `nm::String` not starting with "@", updates the package `nm` in all shared environments.
 - Called with a single argument `nm::Vector{String}`, updates the packages and/or environments in `nm`.
 - Called with two arguments `env` and `pkgs`, updates the package(s) `pkgs` in the environment `env`.
 
-If Julia version supports versioned manifests, on any updates, a versioned manifest will be created in each updated env.
+If Julia version supports version-specific manifest, then on any updates a versioned manifest will be created in each updated env.
 See also [`make_current_mnf`](@ref).
 
 Returnes `nothing`.
+
+This function is public, not exported.
 """
-function update_shared(env::EnvInfo, pkgs::Union{Nothing, AbstractString, Vector{<:AbstractString}} = nothing) 
+function update(env::EnvInfo, pkgs::Union{Nothing, AbstractString, Vector{<:AbstractString}} = nothing; warn_if_missing=true) 
     curr_env = current_env()
+
+    if !isnothing(pkgs)
+        pkgs = typeof(pkgs) <: AbstractString ? [pkgs] : pkgs
+        missing_pkgs = setdiff(pkgs, env.pkgs)
+        updatable_pkgs = intersect(pkgs, env.pkgs)
+        if !isempty(missing_pkgs)
+            errinfo = "Packages $(missing_pkgs) are not in the environment $(env.name)"
+            warn_if_missing || error(errinfo)
+            @warn errinfo
+        end
+    end
 
     make_current_mnf(env) 
     Pkg.activate(env.path)
-    isnothing(pkgs) ? Pkg.update() : Pkg.update(pkgs)
+    isnothing(pkgs) ? Pkg.update() : Pkg.update(updatable_pkgs)
     
     Pkg.activate(curr_env.path)
     return nothing
 end
 
-function update_shared()
+function update()
     envinfos = shared_environments_envinfos().shared_envs
     for env in envinfos
-        update_shared(env)
+        update(env)
     end
     return nothing
 end
 
-function update_shared(nm::AbstractString; ignore_missing=false)
+function update(nm::AbstractString; warn_if_missing=false)
     isenv = startswith(nm, "@")
     if isenv
         env = getenvinfo(nm)
-        update_shared(env)
+        update(env)
     else
         packages = list_shared_packages()
         if !haskey(packages, nm) 
-            ignore_missing && return # covers the case when the package nm is in the current project and thus available - but not in any shared env
+            warn_if_missing && (@warn "Package $nm not found" ;return nothing)
             error("Package $nm not found")
         end
 
         p = packages[nm]
         for env in p.envs
-            update_shared(env, nm)
+            update(env, nm)
         end
     end
     return nothing
 end
 
-function update_shared(env::AbstractString, pkgs::Union{AbstractString, Vector{<:AbstractString}}) 
+function update(env::AbstractString, pkgs::Union{AbstractString, Vector{<:AbstractString}}) 
     startswith(env, "@") || error("Name of shared environment must start with @")
-    update_shared(getenvinfo(env), pkgs)
+    update(EnvInfo(env), pkgs)
 end
 
-update_shared(nm::Vector{<:AbstractString}; ignore_missing=false) = (update_shared.(nm; ignore_missing); return nothing)
+update(nm::Vector{<:AbstractString}; warn_if_missing=true) = (update.(nm; warn_if_missing); return nothing)
 
 @kwdef mutable struct AcceptedKwargs
     update_pkg::Bool = false
@@ -155,7 +182,7 @@ function update_if_asked(flags, packages)
     elseif flags.update_env 
         update_all_envs()
     elseif flags.update_pkg
-        update_shared(packages; ignore_missing=true)
+        update(packages; warn_if_missing=true)
     end
     return nothing
 end
@@ -164,7 +191,7 @@ end
 function update_all_envs()
     (; shared_envs) = shared_environments_envinfos()
     envs = ["@$(env.name)" for env in shared_envs if env.in_path]
-    update_shared(envs)
+    update(envs)
     return nothing
 end
 
@@ -172,6 +199,6 @@ end
 function update_all()
     make_current_mnf(; current=true)
     Pkg.update()
-    update_shared()
+    update()
     return nothing
 end

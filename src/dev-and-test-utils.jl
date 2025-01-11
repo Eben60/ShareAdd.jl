@@ -1,3 +1,5 @@
+# this file is not included in ShareAdd package
+
 using ShareAdd
 using ShareAdd: PackageInfo, EnvInfo, OptimSet, EnvSet
 

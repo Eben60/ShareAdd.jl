@@ -51,32 +51,9 @@ if VERSION >= v"1.11.0-DEV.469"
     include("public.julia")
 end
 
+@assert env_folders(; create=true).envs_exist
+
 using PrecompileTools: @compile_workload
 include("precompile.jl")
-
-# """
-#     publicity(md, ent, grade::Integer)
-
-# - `md`: Module
-# - `ent`: Entity (a function, type, etc.)
-# - `grade`: 0 - the entity is private, 1 - public, 2 - exported
-# """
-# function publicity(md, ent, grade::Integer)
-#     nms = names(md; all=true)
-
-#     if grade == 0
-#         f = filter(x -> !Base.ispublic(md, x))
-#     elseif grade == 1
-#         f = filter(x -> Base.ispublic(md, x) && !Base.isexported(md, x) )
-#     else
-#         f = filter(x -> Base.isexported(md, x) )
-#     end
-
-#     names_subset = f(nms)
-#     return ent in getproperty.(Ref(md), names_subset)
-# end
-# export publicity
-
-
 
 end # module ShAdd

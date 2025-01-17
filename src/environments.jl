@@ -2,15 +2,36 @@
 is_minor_version(v1::VersionNumber, v2::VersionNumber) = 
     v1.major == v2.major && v1.minor == v2.minor
 
+
+"""
+    env_folders(; depot = first(DEPOT_PATH), create=false) -> 
+        (; envs_folder, main_env, envs_exist)
+
+Returns a named tuple containing the path to the main folder holding all share environments,
+the path to the main shared environment, and a boolean indicating whether the main environment
+folder exists.
+
+If `create=true`, the main environment folder will be created if it does not exist.
+"""
+function env_folders(; depot = first(DEPOT_PATH), create=false)
+    envs_folder = joinpath(depot, "environments")
+    main_env = joinpath(envs_folder, "v$(VERSION.major).$(VERSION.minor)")
+    envs_exist = isdir(main_env)
+    if create && !envs_exist 
+        mkpath(main_env)
+        envs_exist = isdir(main_env)
+    end
+    return (; envs_folder, main_env, envs_exist)
+end
+
 """
     shared_environments_envinfos(; depot = first(DEPOT_PATH)) -> 
         (; shared_envs::Dict{name, EnvInfo},
         envs_folder_path::String, 
         shared_env_names::Vector{String})
-
 """
 function shared_environments_envinfos(; std_lib=false, depot = first(DEPOT_PATH))
-    envs_folder_path = joinpath(depot, "environments")
+    envs_folder_path =  env_folders(; depot).envs_folder
     shared_envs = Dict{String, EnvInfo}()
 
     isdir(envs_folder_path) || error("Environment folder $envs_folder_path not found")  

@@ -1,5 +1,13 @@
 ## Changelog
 
+### Release 2.0.1
+
+_2025-01-18_ 
+
+#### Fixes
+
+Workaround for an issue that sometimes occured when running the test suite on a CI server.
+
 ### Release 2.0.0
 
 _2025-01-18_ 

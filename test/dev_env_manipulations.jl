@@ -15,7 +15,7 @@ end
 
 complete_tests = false
 try
-    include("runtests.jl")
+    include("envs_manipulations.jl")
 
 finally
     @suppress begin
@@ -24,10 +24,3 @@ finally
     end
 end
 ;
-
-"""
-coverage = process_folder()
-LCOV.writefile("lcov.info", coverage)
-
-clean_folder(".")
-"""

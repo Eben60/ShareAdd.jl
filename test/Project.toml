@@ -1,6 +1,8 @@
 [deps]
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 Coverage = "a2441757-f6aa-5fb2-8edb-039e3f45d037"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"
 Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
 TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"

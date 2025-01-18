@@ -76,7 +76,7 @@ end
     using ShareAdd: current_env
     ce = current_env()
     @test ce.shared == false
-    @test ce.pkgs == Set(["Coverage", "Test", "Aqua", "Suppressor", "TOML", "ShareAdd", "SafeTestsets"])
+    @test ce.pkgs == Set(["Coverage", "Test", "Aqua", "Suppressor", "TOML", "ShareAdd", "SafeTestsets", "Random", "Pkg"])
 end
 
 @safetestset "check_packages" begin
@@ -113,9 +113,16 @@ end
 end
 
 @safetestset "info" begin
-    using ShareAdd: all_same_art
+    using ShareAdd: all_same_art, invert_dict, pkg_isloaded
     @test !all_same_art(["a", "b", "@c"])
     @test all_same_art(["@a", "@b", "@c"])
     @test all_same_art(["a", "b", "c"])
+    da = (Dict("a" => ["1", "2", "3"], "b" => ["3", "4", "5"], "c" => ["5", "6", "7", "8"], "e" => ["1", "2", "6", "7", "8"]))
+    di = invert_dict(da)
+    dd = Dict("8" => ["c", "e"], "4" => ["b"], "1" => ["a", "e"], "5" => ["b", "c"], "2" => ["a", "e"], "6" => ["c", "e"], "7" => ["c", "e"], "3" => ["a", "b"])
+    @test di == dd
+
+    @test pkg_isloaded.(["Test", "Aqua", "ShareAdd", "SafeTestsets"]) |> all
 end
 
+include("envs_manipulations.jl")

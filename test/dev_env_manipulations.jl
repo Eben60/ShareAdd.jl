@@ -15,23 +15,15 @@ end
 
 complete_tests = false
 try
-    include("runtests.jl")
+    include("envs_manipulations.jl")
 
 finally
     @suppress begin
-    Pkg.rm(parent_proj_name)
+    try
+        Pkg.rm(parent_proj_name)
+    catch
+    end
     Pkg.activate(prev_proj)
     end
 end
 ;
-
-"""
-using ShareAdd
-@usingany Coverage
-coverage = process_folder();
-LCOV.writefile("lcov.info", coverage);
-
-clean_folder(".");
-
-
-"""

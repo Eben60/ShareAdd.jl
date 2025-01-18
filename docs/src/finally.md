@@ -1,5 +1,14 @@
 ## Changelog
 
+### Release 2.0.
+
+_2025-01-19_ 
+
+#### Summary
+
+- Substantially extended tests coverage. 
+- Fixed a minor bug or two.
+
 ### Releases 2.0.1 & 2.0.2
 
 _2025-01-18_ 

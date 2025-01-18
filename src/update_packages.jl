@@ -135,7 +135,7 @@ end
 
 function update()
     envinfos = shared_environments_envinfos().shared_envs
-    for env in envinfos
+    for env in envinfos |> values
         update(env)
     end
     return nothing
@@ -190,7 +190,7 @@ end
 "updates all shared environments currently in LOAD_PATH"
 function update_all_envs()
     (; shared_envs) = shared_environments_envinfos()
-    envs = ["@$(env.name)" for env in shared_envs if env.in_path]
+    envs = ["@$(env.name)" for env in values(shared_envs) if env.in_path]
     update(envs)
     return nothing
 end

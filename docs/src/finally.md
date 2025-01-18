@@ -1,12 +1,13 @@
 ## Changelog
 
-### Release 2.0.1 & 2.0.2
+### Releases 2.0.1 & 2.0.2
 
 _2025-01-18_ 
 
 #### Fixes
 
-Workaround for an issue that sometimes occured when running the test suite on a CI server. Fix a bug with update() call without arguments.
+- Workaround for an issue that sometimes occured when running the test suite on a CI server. 
+- Fix a bug with update() call without arguments.
 
 ### Release 2.0.0
 

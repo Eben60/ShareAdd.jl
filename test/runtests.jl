@@ -3,6 +3,8 @@ using Aqua
 using ShareAdd
 using SafeTestsets
 
+ShareAdd.env_folders(; create=true)
+
 alltests = !(isdefined(@__MODULE__, :complete_tests) && !complete_tests)
 alltests && Aqua.test_all(ShareAdd)
 

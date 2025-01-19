@@ -144,11 +144,12 @@ end # "update"
     @test !isdir(e3.path)
 
     @test_throws ErrorException delete(fp1.name)
-    delete(fp1.name; inall=true)
-    @test !isdir(e1.path)
-    delete([fp2.name, fp3.name])
-    @test !isdir(e2.path)
-
+    if VERSION >= v"1.11" # deleting with faked project would throw on 1.10
+        delete(fp1.name; inall=true) 
+        @test !isdir(e1.path)
+        delete([fp2.name, fp3.name])
+        @test !isdir(e2.path)
+    end
     end # @suppress
 
 end

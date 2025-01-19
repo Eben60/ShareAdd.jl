@@ -19,7 +19,10 @@ try
 
 finally
     @suppress begin
-    Pkg.rm(parent_proj_name)
+    try
+        Pkg.rm(parent_proj_name)
+    catch
+    end
     Pkg.activate(prev_proj)
     end
 end

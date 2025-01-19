@@ -125,4 +125,15 @@ end
     @test pkg_isloaded.(["Test", "Aqua", "ShareAdd", "SafeTestsets"]) |> all
 end
 
+@safetestset "reset" begin
+    using ShareAdd: reset
+    load_path = copy(Base.LOAD_PATH)
+    reset()
+    @test Base.LOAD_PATH == ["@", "@v#.#", "@stdlib"]
+    # restoring LOAD_PATH
+    empty!(Base.LOAD_PATH)
+    append!(Base.LOAD_PATH, load_path)
+end # @safetestset
+
+
 include("envs_manipulations.jl")

@@ -123,13 +123,28 @@ function update(env::EnvInfo, pkgs::Union{Nothing, AbstractString, Vector{<:Abst
             warn_if_missing || error(errinfo)
             @warn errinfo
         end
+    else
+        updatable_pkgs = env.pkgs
     end
 
-    make_current_mnf(env) 
-    Pkg.activate(env.path)
-    isnothing(pkgs) ? Pkg.update() : Pkg.update(updatable_pkgs)
-    
-    Pkg.activate(curr_env.path)
+    make_current_mnf(env)
+
+    if !isnothing(updatable_pkgs) && !isempty(updatable_pkgs)
+        try
+            Pkg.activate(env.path)
+            if isnothing(pkgs) 
+                Pkg.update()
+            else
+                Pkg.update(updatable_pkgs)
+            end
+        catch e
+            Pkg.activate(curr_env.path)
+            rethrow(e)
+        finally
+            Pkg.activate(curr_env.path)
+        end
+
+    end
     return nothing
 end
 
@@ -161,9 +176,9 @@ function update(nm::AbstractString; warn_if_missing=false)
     return nothing
 end
 
-function update(env::AbstractString, pkgs::Union{AbstractString, Vector{<:AbstractString}}) 
+function update(env::AbstractString, pkgs::Union{AbstractString, Vector{<:AbstractString}}; warn_if_missing=false) 
     startswith(env, "@") || error("Name of shared environment must start with @")
-    update(EnvInfo(env), pkgs)
+    update(EnvInfo(env), pkgs; warn_if_missing)
 end
 
 update(nm::Vector{<:AbstractString}; warn_if_missing=true) = (update.(nm; warn_if_missing); return nothing)

@@ -26,8 +26,12 @@ end
 ;
 
 """
-coverage = process_folder()
-LCOV.writefile("lcov.info", coverage)
+using ShareAdd
+@usingany Coverage
+coverage = process_folder();
+LCOV.writefile("lcov.info", coverage);
 
-clean_folder(".")
+clean_folder(".");
+
+
 """

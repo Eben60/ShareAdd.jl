@@ -9,58 +9,9 @@ using Random
 using TOML
 using Suppressor
 
+include("test_utilities.jl")
+
 (; envs_folder, main_env, envs_exist) = ShareAdd.env_folders()
-
-const folder_pref = "z2del-0nzj"
-
-function cleanup(fld_pref)
-    for f in readdir(envs_folder, join=true)
-        startswith(basename(f), fld_pref) && rm(f, recursive=true)
-    end
-    return nothing
-end
-
-function make_tmp_env(folder)
-    name = "$(folder_pref)$(randstring(10))" |> lowercase
-    readme = """The enclosing folder "$name" is a temporary one. It was created within a test run, and normally shlould habe been deleted. Please delete it."""
-    path = joinpath(folder, name)
-    mkdir(path)
-    open(joinpath(path, "README.txt"), "w") do io
-        print(io, readme)
-    end
-    return (; name, path)
-end
-
-
-function create_project_toml(env, pkgs)
-    contents = Dict("deps" => Dict([name=>uuid for (name, uuid) in pkgs]))
-    open(joinpath(env.path, "Project.toml"), "w") do io
-        TOML.print(io, contents, sorted=true)
-    end
-    return nothing
-end
-
-function create_manifest_toml(env, pkgs)
-    contents = Dict{String, Any}(
-        "julia_version" => string(VERSION), 
-        "manifest_format" => "2.0", 
-        "project_hash" => randstring('0':'9',7) * "e769b4ba1e91fd6e37551f17b91d859eb",
-        )
-    deps = Dict{String, Any}()
-    for pkg in pkgs
-        deps[pkg.name] = [Dict(k => string.(v) for (k,v) in pairs(pkg))]
-    end
-    contents["deps"] = deps
-
-    open(joinpath(env.path, "Manifest.toml"), "w") do io
-        TOML.print(io, contents, sorted=true)
-    end
-    return nothing
-end
-
-create_project(env, pkgs) = (create_project_toml(env, pkgs); create_manifest_toml(env, pkgs))
-
-# # # # # 
 
 cleanup(folder_pref)
 
@@ -118,11 +69,38 @@ create_project(e2, [fp1, fp2, fp3])
     (; env_dict, pkg_dict, envs, pkgs, absent) = info("FakeProjectNoteExists"; disp_rslt=false,ret_rslt=true)
     @test "FakeProjectNoteExists" in absent
 
-    @suppress begin
+    info_out1 = @capture_out begin
         @test isnothing(info())
+    end
 
-    end # @suppress
+    info_out2 = @capture_out begin
+        @test isnothing(info(; by_env=false))
+    end 
+
+    s1 = "  @$(e1.name)\n" *
+    "   => [\"Fakeproj1\"]\n"
+   @test occursin(s1, info_out1)
+
+   s2 = "  @$(e2.name)\n" *
+   "   => [\"Fakeproj1\", \"Fakeproj2\", \"Fakeproj3\"]\n"
+    @test occursin(s2, info_out1)
+
+
+    s3 ="  Fakeproj3\n" *
+    "   => [\"@" * e2.name * "\"]\n"
+    @test occursin(s3, info_out2)
+
+    (n1, n2) = [e1.name, e2.name] |> sort
+    s4 ="  Fakeproj1\n" *
+    "   => [\"@$n1\", \"@$n2\"]"
+    @test occursin(s4, info_out2)
+
 end
+
+"""@z2del-0nzjvwnosbelat
+=> ["Fakeproj1", "Fakeproj2", "Fakeproj3"]
+@z2del-0nzjy0gegnzj75
+=> String[]"""
 
 @testset "update" begin
     @suppress begin

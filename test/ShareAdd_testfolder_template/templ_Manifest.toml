@@ -1,0 +1,11 @@
+# This file is machine-generated - editing it directly is not advised
+
+julia_version = "1.10.0"
+manifest_format = "2.0"
+project_hash = "99c87eb8551bccebbe143e0edd5b2f2578ddadcd"
+
+[[deps.ShareAdd]]
+deps = ["Pkg", "PrecompileTools", "REPL", "TOML"]
+git-tree-sha1 = "aa1fa116e6e3a1f06cfa55ca7803a2d13c5a1286"
+uuid = "27c01619-3163-4fe3-a204-36d38c32eb7d"
+version = "2.0.0"

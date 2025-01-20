@@ -9,65 +9,25 @@ using Random
 using TOML
 using Suppressor
 
+include("test_utilities.jl")
+
 (; envs_folder, main_env, envs_exist) = ShareAdd.env_folders()
-
-const folder_pref = "z2del-0nzj"
-
-function cleanup(fld_pref)
-    for f in readdir(envs_folder, join=true)
-        startswith(basename(f), fld_pref) && rm(f, recursive=true)
-    end
-    return nothing
-end
-
-function make_tmp_env(folder)
-    name = "$(folder_pref)$(randstring(10))" |> lowercase
-    readme = """The enclosing folder "$name" is a temporary one. It was created within a test run, and normally shlould habe been deleted. Please delete it."""
-    path = joinpath(folder, name)
-    mkdir(path)
-    open(joinpath(path, "README.txt"), "w") do io
-        print(io, readme)
-    end
-    return (; name, path)
-end
-
-
-function create_project_toml(env, pkgs)
-    contents = Dict("deps" => Dict([name=>uuid for (name, uuid) in pkgs]))
-    open(joinpath(env.path, "Project.toml"), "w") do io
-        TOML.print(io, contents, sorted=true)
-    end
-    return nothing
-end
-
-function create_manifest_toml(env, pkgs)
-    contents = Dict{String, Any}(
-        "julia_version" => string(VERSION), 
-        "manifest_format" => "2.0", 
-        "project_hash" => randstring('0':'9',7) * "e769b4ba1e91fd6e37551f17b91d859eb",
-        )
-    deps = Dict{String, Any}()
-    for pkg in pkgs
-        deps[pkg.name] = [Dict(k => string.(v) for (k,v) in pairs(pkg))]
-    end
-    contents["deps"] = deps
-
-    open(joinpath(env.path, "Manifest.toml"), "w") do io
-        TOML.print(io, contents, sorted=true)
-    end
-    return nothing
-end
-
-create_project(env, pkgs) = (create_project_toml(env, pkgs); create_manifest_toml(env, pkgs))
-
-# # # # # 
 
 cleanup(folder_pref)
 
 e1 = make_tmp_env(envs_folder)
 e2 = make_tmp_env(envs_folder)
 e3 = make_tmp_env(envs_folder)
+e4 = make_tmp_env(envs_folder)
 
+tmpl = joinpath(@__DIR__, "ShareAdd_testfolder_template")
+@test isdir(tmpl)
+
+for f in readdir(tmpl; join=false)
+    src = joinpath(tmpl, f)
+    dst = joinpath(e4.path, f[7:end])
+    cp(src, dst; )
+end
 
 fp1 = (name="Fakeproj1" , uuid="5a8e0e4a-2ba5-4c89-ac0f-8fb2c9294632", version=v"0.1.2")
 fp2 = (name="Fakeproj2" , uuid="07e9b84d-f200-4453-ad65-b39ac92d064c", version=v"1.2.3")
@@ -78,8 +38,7 @@ create_project(e2, [fp1, fp2, fp3])
 
 @testset "InfoExtended" begin
 
-
-    using ShareAdd: pkg_version, info, EnvInfo, shared_environments_envinfos
+    using ShareAdd: pkg_version, info, EnvInfo, shared_environments_envinfos, is_shared_environment
     @test pkg_version("@$(e1.name)", fp1.name) == VersionNumber(fp1.version)
     @test pkg_version("@$(e2.name)") == Dict(fp.name => VersionNumber(fp.version) for fp in [fp1, fp2, fp3])
     @test isnothing(info(; disp_rslt=false))
@@ -118,10 +77,81 @@ create_project(e2, [fp1, fp2, fp3])
     (; env_dict, pkg_dict, envs, pkgs, absent) = info("FakeProjectNoteExists"; disp_rslt=false,ret_rslt=true)
     @test "FakeProjectNoteExists" in absent
 
-    @suppress begin
+    info_byenv = @capture_out begin
         @test isnothing(info())
+    end
 
-    end # @suppress
+    info_byproj = @capture_out begin
+        info(; by_env=false)
+    end 
+
+    info_envlisting = @capture_out begin
+        info(; listing=:envs)
+    end 
+
+    info_pkglisting = @capture_out begin
+        info(; listing=:pkgs)
+    end
+
+    info_absent = @capture_out begin
+        info(["@$(e1.name)", "@NoSuchFakeEnvironment"])
+    end
+
+    info_upgradable = @capture_out begin
+        info(["@$(e4.name)"]; upgradable=true)
+    end
+
+    s1 = "  @$(e1.name)\n" *
+    "   => [\"Fakeproj1\"]\n"
+    @test occursin(s1, info_byenv)
+
+    s2 = "  @$(e2.name)\n" *
+    "   => [\"Fakeproj1\", \"Fakeproj2\", \"Fakeproj3\"]\n"
+    @test occursin(s2, info_byenv)
+
+    s3 ="  Fakeproj3\n" *
+    "   => [\"@" * e2.name * "\"]\n"
+    @test occursin(s3, info_byproj)
+
+    (n1, n2) = [e1.name, e2.name] |> sort
+    s4 ="  Fakeproj1\n" *
+    "   => [\"@$n1\", \"@$n2\"]"
+    @test occursin(s4, info_byproj)
+
+    s5 = raw"^ +\[.*" * "\"$n1\", .*\"$n2\".*"
+    r5 = Regex(s5)
+    @test occursin(r5, info_envlisting)
+
+    s6 = "\"Fakeproj1\", \"Fakeproj2\", \"Fakeproj3\""
+    @test occursin(s6, info_pkglisting)
+
+    s7 = "The following shared envs do not exist:\n" *
+    raw".*\[.*\"@NoSuchFakeEnvironment\".*\].*" *
+    "\n\nFound pkgs/envs:"
+    r7 = Regex(s7)
+    @test occursin(r7, info_absent)
+
+    s8 = "  @$(e4.name)\n    ShareAdd: 2.0.0 --> "
+    @test occursin(s8, info_upgradable)
+    
+    @test is_shared_environment("@$(e4.name)")
+
+end
+
+@testset "EnvInfo" begin
+    using ShareAdd: EnvInfo
+    ei2 = EnvInfo("@" * e2.name)
+    @test ei2.pkgs == Set([fp1.name, fp2.name, fp3.name])
+
+    @test ei2.in_path == false
+    @test ei2.standard_env == false
+    @test ei2.shared== true
+    @test ei2.temporary == false
+    @test ei2.active_project == false
+
+    ei2empty = EnvInfo(; name = ei2.name)
+    @test ei2empty == ei2
+
 end
 
 @testset "update" begin
@@ -133,6 +163,7 @@ end
 
     @test_logs (:warn, r"Package Fake_roj1 not found") match_mode=:any update("Fake_roj1"; warn_if_missing=true)
     @test_logs (:warn, r"are not in the environment") match_mode=:any update("@$(e2.name)", "Fake_roj1"; warn_if_missing=true)
+
     end # @suppress
 end # "update"
 

@@ -29,7 +29,6 @@ create_project(e2, [fp1, fp2, fp3])
 
 @testset "InfoExtended" begin
 
-
     using ShareAdd: pkg_version, info, EnvInfo, shared_environments_envinfos
     @test pkg_version("@$(e1.name)", fp1.name) == VersionNumber(fp1.version)
     @test pkg_version("@$(e2.name)") == Dict(fp.name => VersionNumber(fp.version) for fp in [fp1, fp2, fp3])
@@ -69,38 +68,75 @@ create_project(e2, [fp1, fp2, fp3])
     (; env_dict, pkg_dict, envs, pkgs, absent) = info("FakeProjectNoteExists"; disp_rslt=false,ret_rslt=true)
     @test "FakeProjectNoteExists" in absent
 
-    info_out1 = @capture_out begin
+    info_byenv = @capture_out begin
         @test isnothing(info())
     end
 
-    info_out2 = @capture_out begin
-        @test isnothing(info(; by_env=false))
+    info_byproj = @capture_out begin
+        info(; by_env=false)
     end 
+
+    info_envlisting = @capture_out begin
+        info(; listing=:envs)
+    end 
+
+    info_pkglisting = @capture_out begin
+        info(; listing=:pkgs)
+    end
+
+    info_absent = @capture_out begin
+        info(["@$(e1.name)", "@NoSuchFakeEnvironment"])
+    end
 
     s1 = "  @$(e1.name)\n" *
     "   => [\"Fakeproj1\"]\n"
-   @test occursin(s1, info_out1)
+    @test occursin(s1, info_byenv)
 
-   s2 = "  @$(e2.name)\n" *
-   "   => [\"Fakeproj1\", \"Fakeproj2\", \"Fakeproj3\"]\n"
-    @test occursin(s2, info_out1)
-
+    s2 = "  @$(e2.name)\n" *
+    "   => [\"Fakeproj1\", \"Fakeproj2\", \"Fakeproj3\"]\n"
+    @test occursin(s2, info_byenv)
 
     s3 ="  Fakeproj3\n" *
     "   => [\"@" * e2.name * "\"]\n"
-    @test occursin(s3, info_out2)
+    @test occursin(s3, info_byproj)
 
     (n1, n2) = [e1.name, e2.name] |> sort
     s4 ="  Fakeproj1\n" *
     "   => [\"@$n1\", \"@$n2\"]"
-    @test occursin(s4, info_out2)
+    @test occursin(s4, info_byproj)
+
+    s5 = raw"^ +\[.*" * "\"$n1\", .*\"$n2\".*"
+    r5 = Regex(s5)
+    @test occursin(r5, info_envlisting)
+
+    s6 = "\"Fakeproj1\", \"Fakeproj2\", \"Fakeproj3\""
+    @test occursin(s6, info_pkglisting)
+
+    s7 = "The following shared envs do not exist:\n" *
+    raw".*\[.*\"@NoSuchFakeEnvironment\".*\].*" *
+    "\n\nFound pkgs/envs:"
+    r7 = Regex(s7)
+
+
+    @test occursin(r7, info_absent)
 
 end
 
-"""@z2del-0nzjvwnosbelat
-=> ["Fakeproj1", "Fakeproj2", "Fakeproj3"]
-@z2del-0nzjy0gegnzj75
-=> String[]"""
+@testset "EnvInfo" begin
+    using ShareAdd: EnvInfo
+    ei2 = EnvInfo("@" * e2.name)
+    @test ei2.pkgs == Set([fp1.name, fp2.name, fp3.name])
+
+    @test ei2.in_path == false
+    @test ei2.standard_env == false
+    @test ei2.shared== true
+    @test ei2.temporary == false
+    @test ei2.active_project == false
+
+    ei2empty = EnvInfo(; name = ei2.name)
+    @test ei2empty == ei2
+
+end
 
 @testset "update" begin
     @suppress begin

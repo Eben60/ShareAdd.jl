@@ -113,7 +113,7 @@ end
 end
 
 @safetestset "info" begin
-    using ShareAdd: all_same_art, invert_dict, pkg_isloaded
+    using ShareAdd: all_same_art, invert_dict, pkg_isloaded, latest_version
     @test !all_same_art(["a", "b", "@c"])
     @test all_same_art(["@a", "@b", "@c"])
     @test all_same_art(["a", "b", "c"])
@@ -123,6 +123,7 @@ end
     @test di == dd
 
     @test pkg_isloaded.(["Test", "Aqua", "ShareAdd", "SafeTestsets"]) |> all
+    @test latest_version(["ShareAdd"])["ShareAdd"] > v"2.0.0"
 end
 
 @safetestset "reset" begin
@@ -134,6 +135,5 @@ end
     empty!(Base.LOAD_PATH)
     append!(Base.LOAD_PATH, load_path)
 end # @safetestset
-
 
 include("envs_manipulations.jl")

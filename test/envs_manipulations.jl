@@ -18,7 +18,16 @@ cleanup(folder_pref)
 e1 = make_tmp_env(envs_folder)
 e2 = make_tmp_env(envs_folder)
 e3 = make_tmp_env(envs_folder)
+e4 = make_tmp_env(envs_folder)
 
+tmpl = joinpath(@__DIR__, "ShareAdd_testfolder_template")
+@test isdir(tmpl)
+
+for f in readdir(tmpl; join=false)
+    src = joinpath(tmpl, f)
+    dst = joinpath(e4.path, f[7:end])
+    cp(src, dst; )
+end
 
 fp1 = (name="Fakeproj1" , uuid="5a8e0e4a-2ba5-4c89-ac0f-8fb2c9294632", version=v"0.1.2")
 fp2 = (name="Fakeproj2" , uuid="07e9b84d-f200-4453-ad65-b39ac92d064c", version=v"1.2.3")
@@ -88,6 +97,10 @@ create_project(e2, [fp1, fp2, fp3])
         info(["@$(e1.name)", "@NoSuchFakeEnvironment"])
     end
 
+    info_upgradable = @capture_out begin
+        info(["@$(e4.name)"]; upgradable=true)
+    end
+
     s1 = "  @$(e1.name)\n" *
     "   => [\"Fakeproj1\"]\n"
     @test occursin(s1, info_byenv)
@@ -116,9 +129,15 @@ create_project(e2, [fp1, fp2, fp3])
     raw".*\[.*\"@NoSuchFakeEnvironment\".*\].*" *
     "\n\nFound pkgs/envs:"
     r7 = Regex(s7)
-
-
     @test occursin(r7, info_absent)
+
+    s8 = "  @$(e4.name)\n    ShareAdd: 2.0.0 --> "
+    @test occursin(s8, info_upgradable)
+    
+"""
+  @ShareAdd_testfolder
+    ShareAdd: 2.0.0 --> 2.0.3
+"""
 
 end
 
@@ -147,6 +166,7 @@ end
 
     @test_logs (:warn, r"Package Fake_roj1 not found") match_mode=:any update("Fake_roj1"; warn_if_missing=true)
     @test_logs (:warn, r"are not in the environment") match_mode=:any update("@$(e2.name)", "Fake_roj1"; warn_if_missing=true)
+
     end # @suppress
 end # "update"
 

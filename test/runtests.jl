@@ -113,7 +113,7 @@ end
 end
 
 @safetestset "info" begin
-    using ShareAdd: all_same_art, invert_dict, pkg_isloaded, latest_version
+    using ShareAdd: all_same_art, invert_dict, pkg_isloaded, latest_version, list_shared_envs, is_package
     @test !all_same_art(["a", "b", "@c"])
     @test all_same_art(["@a", "@b", "@c"])
     @test all_same_art(["a", "b", "c"])
@@ -124,6 +124,9 @@ end
 
     @test pkg_isloaded.(["Test", "Aqua", "ShareAdd", "SafeTestsets"]) |> all
     @test latest_version(["ShareAdd"])["ShareAdd"] > v"2.0.0"
+    @test isempty(list_shared_envs("Pkg"))
+    @test list_shared_envs("Pkg"; std_lib = true) == ["stdlib"]
+    @test !is_package() 
 end
 
 @safetestset "reset" begin

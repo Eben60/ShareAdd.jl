@@ -123,40 +123,6 @@ function list_shared_packages(; std_lib = false, depot = first(DEPOT_PATH))
 end
 
 """
-    list_shared_pkgs(; std_lib=false) -> Vector{String}
-    list_shared_pkgs(env_name) -> Vector{String}
-
-Returns the names of packages in all shared environments, or in given environment. 
-If `std_lib=true`, also includes packages in @stdlib.
-
-# Examples
-```julia-repl
-julia> list_shared_pkgs()
-5-element Vector{String}:
-"foo"
-"bar"
-"baz"
-"qux"
-"quux"
-
-julia> list_shared_pkgs("@Qu")
-2-element Vector{String}:
-"qux"
-"quux"
-
-```
-"""
-function list_shared_pkgs(; std_lib=false)
-    packages = list_shared_packages(;std_lib)
-    return packages |> keys |> collect |> sort!
-end
-
-function list_shared_pkgs(env_name)
-    is_shared_environment(env_name) || error("Environment $env_name is not a shared environment")
-    return shared_packages(env_name)
-end
-
-"""
     env_path(env_name::AbstractString, depot = first(DEPOT_PATH); skipfirstchar = true) -> String
 
 Returns the path of the environment with name `env_name`. 

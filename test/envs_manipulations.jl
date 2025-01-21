@@ -38,7 +38,7 @@ create_project(e2, [fp1, fp2, fp3])
 
 @testset "InfoExtended" begin
 
-    using ShareAdd: pkg_version, info, EnvInfo, shared_environments_envinfos
+    using ShareAdd: pkg_version, info, EnvInfo, shared_environments_envinfos, is_shared_environment
     @test pkg_version("@$(e1.name)", fp1.name) == VersionNumber(fp1.version)
     @test pkg_version("@$(e2.name)") == Dict(fp.name => VersionNumber(fp.version) for fp in [fp1, fp2, fp3])
     @test isnothing(info(; disp_rslt=false))
@@ -134,10 +134,7 @@ create_project(e2, [fp1, fp2, fp3])
     s8 = "  @$(e4.name)\n    ShareAdd: 2.0.0 --> "
     @test occursin(s8, info_upgradable)
     
-"""
-  @ShareAdd_testfolder
-    ShareAdd: 2.0.0 --> 2.0.3
-"""
+    @test is_shared_environment("@$(e4.name)")
 
 end
 

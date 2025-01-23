@@ -1,5 +1,14 @@
 ## Changelog
 
+### Release 2.1.0
+
+_2025-01-xx_ 
+
+#### Summary
+
+- Added a method for [`ShareAdd.update()`](@ref) and [`ShareAdd.delete()`](@ref) in form `delete("@Foo" => "bar")`
+- Set the lower bound for version-specific manifests now to Julia v1.10.8 (as the feature was backported in Julia)
+
 ### Release 2.0.3 & 2.0.4
 
 _2025-01-19_ , _2025-01-21_ 
@@ -34,6 +43,7 @@ The utilities for managing environments were completely revamped.
 #### New features
 
 - New or renamed public functions with short and easy to note names [`info`](@ref ShareAdd.info), [`update`](@ref ShareAdd.update), [`delete`](@ref ShareAdd.delete), and [`reset`](@ref ShareAdd.reset) provide extended functionalities for managing shared environments.
+- Support for version-specific manifests.
 
 #### Other changes
 

@@ -1,4 +1,4 @@
-versioned_mnf_supported(v = VERSION) = v >= v"1.11.0"
+versioned_mnf_supported(v = VERSION) = v >= v"1.10.8"
 
 function versioned_mnf_name(v = VERSION)
     versioned_mnf_supported() || return nothing
@@ -97,17 +97,25 @@ end
     update(nm::Vector{<:AbstractString})
     update(env::AbstractString, pkgs::Union{AbstractString, Vector{<:AbstractString}}) 
     update(env::EnvInfo, pkgs::Union{Nothing, S, Vector{S}} = Nothing) where S <: AbstractString
+    update(p::Pair{<:AbstractString, <:AbstractString})
 
 - Called with no arguments, updates all shared environments.
 - Called with a single argument `nm::String` starting with "@", updates the shared environment `nm`.
 - Called with a single argument `nm::String` not starting with "@", updates the package `nm` in all shared environments.
 - Called with a single argument `nm::Vector{String}`, updates the packages and/or environments in `nm`.
 - Called with two arguments `env` and `pkgs`, updates the package(s) `pkgs` in the environment `env`.
+- Called with an argument env => pkg, updates the package `pkg` in the environment `env`.
 
 If Julia version supports version-specific manifest, then on any updates a versioned manifest will be created in each updated env.
 See also [`make_current_mnf`](@ref).
 
 Returnes `nothing`.
+
+# Examples
+```julia-repl
+julia> ShareAdd.update("@StatPackages")
+julia> ShareAdd.update("@Foo" => "bar")
+```
 
 This function is public, not exported.
 """
@@ -182,6 +190,8 @@ function update(env::AbstractString, pkgs::Union{AbstractString, Vector{<:Abstra
 end
 
 update(nm::Vector{<:AbstractString}; warn_if_missing=true) = (update.(nm; warn_if_missing); return nothing)
+
+update(p::Pair{<:AbstractString, <:AbstractString}; warn_if_missing=true) = update(p.first, p.second; warn_if_missing)
 
 @kwdef mutable struct AcceptedKwargs
     update_pkg::Bool = false

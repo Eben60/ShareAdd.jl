@@ -150,6 +150,7 @@ Returns the list of all packages in the added environments as a `Vector{String}`
 
 # Examples
 ```julia-repl
+julia> using ShareAdd: sh_add
 julia> sh_add("@StatPackages")
 3-element Vector{String}:
  "Arrow"

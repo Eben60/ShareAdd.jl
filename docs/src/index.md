@@ -117,18 +117,18 @@ Modules = [ShareAdd]
 Order   = [:macro, ]
 ```
 
-### Public types
-
-```@autodocs
-Modules = [ShareAdd]
-Order   = [:type, ]
-Filter = t -> (! Base.isexported(ShareAdd, nameof(t)) && Base.ispublic(ShareAdd, nameof(t)))
-```
-
 ### Public functions
 
 ```@autodocs
 Modules = [ShareAdd]
 Order   = [:function]
+Filter = t -> (! Base.isexported(ShareAdd, nameof(t)) && Base.ispublic(ShareAdd, nameof(t)))
+```
+
+### Public types
+
+```@autodocs
+Modules = [ShareAdd]
+Order   = [:type, ]
 Filter = t -> (! Base.isexported(ShareAdd, nameof(t)) && Base.ispublic(ShareAdd, nameof(t)))
 ```

@@ -164,8 +164,10 @@ end
     @test_logs (:warn, r"Package Fake_roj1 not found") match_mode=:any update("Fake_roj1"; warn_if_missing=true)
     @test_logs (:warn, r"are not in the environment") match_mode=:any update("@$(e2.name)", "Fake_roj1"; warn_if_missing=true)
 
-    u = update("@$(e4.name)" => "ShareAdd")
-    @test isnothing(u)
+    if VERSION >= v"1.11" 
+        u = update("@$(e4.name)" => "ShareAdd")
+        @test isnothing(u)
+    end
 
     end # @suppress
 end # "update"

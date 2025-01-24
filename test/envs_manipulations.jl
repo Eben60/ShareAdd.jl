@@ -164,6 +164,9 @@ end
     @test_logs (:warn, r"Package Fake_roj1 not found") match_mode=:any update("Fake_roj1"; warn_if_missing=true)
     @test_logs (:warn, r"are not in the environment") match_mode=:any update("@$(e2.name)", "Fake_roj1"; warn_if_missing=true)
 
+    u = update("@$(e4.name)" => "ShareAdd")
+    @test isnothing(u)
+
     end # @suppress
 end # "update"
 
@@ -174,6 +177,8 @@ end # "update"
     delete("@$(e3.name)")
     @test !isdir(e3.path)
 
+    @test isnothing(delete("@$(e4.name)" => "ShareAdd"))
+    @test !isdir(e4.path)
     @test_throws ErrorException delete(fp1.name)
     if VERSION >= v"1.11" # deleting with faked project would throw on 1.10
         delete(fp1.name; inall=true) 
@@ -186,7 +191,7 @@ end # "update"
 end
 
 
-cleanup(folder_pref)
+# cleanup(folder_pref)
 
 end
 

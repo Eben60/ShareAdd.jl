@@ -103,7 +103,7 @@ The functions [`ShareAdd.info()`](@ref), [`ShareAdd.update()`](@ref), [`ShareAdd
 The function [`ShareAdd.make_importable`](@ref) also does what it says. It is used internally by [`@usingany`](@ref), but it can also be used separately in special cases, e.g. if you need `using A as B` syntax, or want to import a package via `import` statement instead of `using`:
 
 ```
-using ShareAdd
+using ShareAdd: make_importable
 make_importable("Foo")
 import Foo
 ```

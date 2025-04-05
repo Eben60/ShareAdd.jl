@@ -56,7 +56,7 @@ using ShareAdd
 
 As `Chairmarks` was not installed yet, you will be asked as to where to install it. You may e.g. add it to your existing `@utilities` shared environment, or let create a new environment `@Chairmarks` and put it there. 
 
-Afrerwards `@utilities` (and `@Chairmarks`, if created) will be added to `LOAD_PATH`, making their packages available.
+Afterwards `@utilities` (and `@Chairmarks`, if created) will be added to `LOAD_PATH`, making their packages available.
 
 Finally, the macros will execute `using Unitful, TOML, Plots, Chairmarks` resp. `using BenchmarkTools: @btime, save` - and that's it. Enjoy!
 

@@ -156,15 +156,7 @@ function update(env::EnvInfo, pkgs::Union{Nothing, AbstractString, Vector{<:Abst
     return nothing
 end
 
-function update()
-    envinfos = shared_environments_envinfos().shared_envs
-    for env in envinfos |> values
-        update(env)
-    end
-    return nothing
-end
-
-function update_package(pkg)
+function update_package(nm; warn_if_missing=false)
     packages = list_shared_packages()
     if !haskey(packages, nm) 
         warn_if_missing && (@warn "Package $nm not found" ;return nothing)
@@ -177,13 +169,21 @@ function update_package(pkg)
     end
 end
 
+function update()
+    envinfos = shared_environments_envinfos().shared_envs
+    for env in envinfos |> values
+        update(env)
+    end
+    return nothing
+end
+
 function update(nm::AbstractString; warn_if_missing=false)
     isenv = startswith(nm, "@")
     if isenv
         env = getenvinfo(nm)
-        update(env)
+        update(env; warn_if_missing)
     else
-        update_package(nm)
+        update_package(nm; warn_if_missing)
     return nothing
 end
 

@@ -154,20 +154,12 @@ end
 @testset "update" begin
     @suppress begin
     using ShareAdd: update
-    # @test_throws Pkg.Types.PkgError update(fp3.name) 
-    
-    update(fp3.name)
-
-    try
-        update(fp3.name)
-    catch e
-        @show e
-    end
-    # @test_throws Pkg.Types.PkgError update("@$(e2.name)") 
+    @test_throws Pkg.Types.PkgError update(fp3.name)
+    @test_throws Pkg.Types.PkgError update("@$(e2.name)") 
 
 
-    # @test_logs (:warn, r"Package Fake_roj1 not found") match_mode=:any update("Fake_roj1"; warn_if_missing=true)
-    # @test_logs (:warn, r"are not in the environment") match_mode=:any update("@$(e2.name)", "Fake_roj1"; warn_if_missing=true)
+    @test_logs (:warn, r"Package Fake_roj1 not found") match_mode=:any update("Fake_roj1"; warn_if_missing=true)
+    @test_logs (:warn, r"are not in the environment") match_mode=:any update("@$(e2.name)", "Fake_roj1"; warn_if_missing=true)
 
     if VERSION >= v"1.11" 
         u = update("@$(e4.name)" => "ShareAdd")

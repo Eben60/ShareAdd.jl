@@ -1,19 +1,21 @@
-module MakeDelEnvs
-
 using Test
 using Pkg
 using Aqua
 using ShareAdd
-using SafeTestsets
-using Random
-using TOML
+using ShareAdd: cleanup_testenvs, testfolder_prefix
 using Suppressor
-
-include("test_utilities.jl")
 
 (; envs_folder, main_env, envs_exist) = ShareAdd.env_folders()
 
-cleanup(folder_pref)
+parent_mod = parentmodule(@__MODULE__)
+if isdefined(parent_mod, :TestUtilities)
+    using ..TestUtilities
+else
+    include("testing_utilities.jl")
+    using .TestUtilities
+end
+
+cleanup_testenvs()
 
 e1 = make_tmp_env(envs_folder)
 e2 = make_tmp_env(envs_folder)
@@ -157,7 +159,7 @@ end
 @testset "update" begin
     @suppress begin
     using ShareAdd: update
-    @test_throws Pkg.Types.PkgError update(fp3.name) 
+    @test_throws Pkg.Types.PkgError update(fp3.name)
     @test_throws Pkg.Types.PkgError update("@$(e2.name)") 
 
 
@@ -182,7 +184,7 @@ end # "update"
     @test isnothing(delete("@$(e4.name)" => "ShareAdd"))
     @test !isdir(e4.path)
     @test_throws ErrorException delete(fp1.name)
-    if VERSION >= v"1.11" # deleting with faked project would throw on 1.10
+    if VERSION >= v"1.11" # deleting with faked project would throw on 1.10 
         delete(fp1.name; inall=true) 
         @test !isdir(e1.path)
         delete([fp2.name, fp3.name])
@@ -191,9 +193,3 @@ end # "update"
     end # @suppress
 
 end
-
-
-# cleanup(folder_pref)
-
-end
-

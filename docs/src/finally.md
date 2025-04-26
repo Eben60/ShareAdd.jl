@@ -1,10 +1,14 @@
 ## Changelog
 
+### Release 2.1.1
+
+_2025-04-28_ 
+
+Some fixes and refactoring, esp. of the test suite.
+
 ### Release 2.1.0
 
 _2025-01-24_ 
-
-#### Summary
 
 - Added a method for [`ShareAdd.update()`](@ref) and [`ShareAdd.delete()`](@ref) in form `delete("@Foo" => "bar")`
 - Set the lower bound for version-specific manifests now to Julia v1.10.8 (as the feature was backported in Julia)

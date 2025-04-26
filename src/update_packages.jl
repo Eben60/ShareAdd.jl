@@ -6,9 +6,9 @@ function versioned_mnf_name(v = VERSION)
 end
 
 function versioned_mnfs(path)
-    rx = r"manifest-v(\d+)\.(\d+)\.toml"
+    rx = r"^manifest-v(\d+)\.(\d+)\.toml$"
     filenames = readdir(path) .|> lowercase
-    mnfs = filter(x -> startswith(x, rx), filenames)
+    mnfs = filter(x -> occursin(rx, x), filenames)
     vs = VersionNumber[]
     for mn in mnfs
         m = match(rx, mn)
@@ -93,11 +93,11 @@ end
 
 """
     update()
-    update(nm::AbstractString)
-    update(nm::Vector{<:AbstractString})
-    update(env::AbstractString, pkgs::Union{AbstractString, Vector{<:AbstractString}}) 
-    update(env::EnvInfo, pkgs::Union{Nothing, S, Vector{S}} = Nothing) where S <: AbstractString
-    update(p::Pair{<:AbstractString, <:AbstractString})
+    update(nm::AbstractString; warn_if_missing=false)
+    update(nm::Vector{<:AbstractString}; warn_if_missing=true)
+    update(env::AbstractString, pkgs::Union{AbstractString, Vector{<:AbstractString}}; warn_if_missing=true) 
+    update(env::EnvInfo, pkgs::Union{Nothing, S, Vector{S}} = Nothing; warn_if_missing=false) where S <: AbstractString
+    update(p::Pair{<:AbstractString, <:AbstractString}; warn_if_missing=false)
 
 - Called with no arguments, updates all shared environments.
 - Called with a single argument `nm::String` starting with "@", updates the shared environment `nm`.
@@ -105,6 +105,10 @@ end
 - Called with a single argument `nm::Vector{String}`, updates the packages and/or environments in `nm`.
 - Called with two arguments `env` and `pkgs`, updates the package(s) `pkgs` in the environment `env`.
 - Called with an argument `env => pkg`, updates the package `pkg` in the environment `env`.
+
+# kwarg
+- `warn_if_missing::Bool=true` - if env or pkg not found, issues a warning, otherwise would throw an error
+
 
 If Julia version supports version-specific manifest, then on any updates a versioned manifest will be created in each updated env.
 See also [`make_current_mnf`](@ref).
@@ -164,26 +168,19 @@ function update()
     return nothing
 end
 
+# if just one name is specified, would normally throw an error if not found
 function update(nm::AbstractString; warn_if_missing=false)
     isenv = startswith(nm, "@")
     if isenv
         env = getenvinfo(nm)
-        update(env)
+        update(env; warn_if_missing)
     else
-        packages = list_shared_packages()
-        if !haskey(packages, nm) 
-            warn_if_missing && (@warn "Package $nm not found" ;return nothing)
-            error("Package $nm not found")
-        end
-
-        p = packages[nm]
-        for env in p.envs
-            update(env, nm)
-        end
+        update_package(nm; warn_if_missing)
     end
     return nothing
 end
 
+# if just one name is specified, would normally throw an error if not found
 function update(env::AbstractString, pkgs::Union{AbstractString, Vector{<:AbstractString}}; warn_if_missing=false) 
     startswith(env, "@") || error("Name of shared environment must start with @")
     update(EnvInfo(env), pkgs; warn_if_missing)
@@ -191,8 +188,20 @@ end
 
 update(nm::Vector{<:AbstractString}; warn_if_missing=true) = (update.(nm; warn_if_missing); return nothing)
 
-update(p::Pair{<:AbstractString, <:AbstractString}; warn_if_missing=true) = update(p.first, p.second; warn_if_missing)
+update(p::Pair{<:AbstractString, <:AbstractString}; warn_if_missing=false) = update(p.first, p.second; warn_if_missing)
 
+function update_package(nm; warn_if_missing)
+    packages = list_shared_packages()
+    if !haskey(packages, nm) 
+        warn_if_missing && (@warn "Package $nm not found" ;return nothing)
+        error("Package $nm not found")
+    end
+
+    p = packages[nm]
+    for env in p.envs
+        update(env, nm)
+    end
+end
 @kwdef mutable struct AcceptedKwargs
     update_pkg::Bool = false
     update_env::Bool = false
@@ -225,5 +234,15 @@ function update_all()
     make_current_mnf(; current=true)
     Pkg.update()
     update()
+    return nothing
+end
+
+"Removes folders created in the ~/.julia/environments/ folder during the testing. Used in the test suite, but also on the package startup just for the case the test errored."
+function cleanup_testenvs()
+    (; envs_folder) = env_folders()
+    isdir(envs_folder) || return nothing
+    for f in readdir(envs_folder, join=true)
+        startswith(basename(f), testfolder_prefix) && rm(f, recursive=true)
+    end
     return nothing
 end

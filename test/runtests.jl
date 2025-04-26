@@ -5,8 +5,11 @@ using SafeTestsets
 
 ShareAdd.env_folders(; create=true)
 
-alltests = !(isdefined(@__MODULE__, :complete_tests) && !complete_tests)
-alltests && Aqua.test_all(ShareAdd)
+# alltests = !(isdefined(@__MODULE__, :complete_tests) && !complete_tests)
+# alltests && Aqua.test_all(ShareAdd)
+
+include("test_utilities.jl")
+using .TestUtilities: cleanup, testfolder_prefix
 
 @testset "optimset" begin
     @safetestset "env_set" begin
@@ -144,3 +147,5 @@ end
 end # @safetestset
 
 @safetestset "Env Manipulations" include("envs_manipulations.jl")
+
+cleanup(testfolder_prefix)

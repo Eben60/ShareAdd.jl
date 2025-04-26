@@ -1,14 +1,23 @@
-const folder_pref = "z2del-0nzj"
+module TestUtilities
+using ..ShareAdd
+using Random
+using TOML
 
-function cleanup(fld_pref)
-    for f in readdir(envs_folder, join=true)
-        startswith(basename(f), fld_pref) && rm(f, recursive=true)
+testfolder_prefix = "z2del-0nzj"
+export testfolder_prefix
+
+
+function cleanup(fld_prefx)
+    envf = ShareAdd.env_folders
+    for f in readdir(envf().envs_folder, join=true)
+        startswith(basename(f), fld_prefx) && rm(f, recursive=true)
     end
     return nothing
 end
+export cleanup
 
 function make_tmp_env(folder)
-    name = "$(folder_pref)$(randstring(10))" |> lowercase
+    name = "$(testfolder_prefix)$(randstring(10))" |> lowercase
     readme = """The enclosing folder "$name" is a temporary one. It was created within a test run, and normally shlould habe been deleted. Please delete it."""
     path = joinpath(folder, name)
     mkdir(path)
@@ -17,7 +26,7 @@ function make_tmp_env(folder)
     end
     return (; name, path)
 end
-
+export make_tmp_env
 
 function create_project_toml(env, pkgs)
     contents = Dict("deps" => Dict([name=>uuid for (name, uuid) in pkgs]))
@@ -26,6 +35,7 @@ function create_project_toml(env, pkgs)
     end
     return nothing
 end
+export create_project_toml
 
 function create_manifest_toml(env, pkgs)
     contents = Dict{String, Any}(
@@ -44,5 +54,9 @@ function create_manifest_toml(env, pkgs)
     end
     return nothing
 end
+export create_manifest_toml
 
 create_project(env, pkgs) = (create_project_toml(env, pkgs); create_manifest_toml(env, pkgs))
+export create_project
+
+end

@@ -2,15 +2,19 @@ using Test
 using Pkg
 using Aqua
 using ShareAdd
-using Random
-using TOML
 using Suppressor
-
-include("test_utilities.jl")
 
 (; envs_folder, main_env, envs_exist) = ShareAdd.env_folders()
 
-cleanup(folder_pref)
+parent_mod = parentmodule(@__MODULE__)
+if isdefined(parent_mod, :TestUtilities)
+    using ..TestUtilities
+else
+    include("test_utilities.jl")
+    using .TestUtilities
+end
+
+cleanup(testfolder_prefix)
 
 e1 = make_tmp_env(envs_folder)
 e2 = make_tmp_env(envs_folder)
@@ -188,5 +192,3 @@ end # "update"
     end # @suppress
 
 end
-
-# cleanup(folder_pref)

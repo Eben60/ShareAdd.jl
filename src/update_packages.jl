@@ -6,9 +6,9 @@ function versioned_mnf_name(v = VERSION)
 end
 
 function versioned_mnfs(path)
-    rx = r"manifest-v(\d+)\.(\d+)\.toml"
+    rx = r"^manifest-v(\d+)\.(\d+)\.toml$"
     filenames = readdir(path) .|> lowercase
-    mnfs = filter(x -> startswith(x, rx), filenames)
+    mnfs = filter(x -> occursin(rx, x), filenames)
     vs = VersionNumber[]
     for mn in mnfs
         m = match(rx, mn)
@@ -164,24 +164,29 @@ function update()
     return nothing
 end
 
+function update_package(pkg)
+    packages = list_shared_packages()
+    if !haskey(packages, nm) 
+        warn_if_missing && (@warn "Package $nm not found" ;return nothing)
+        error("Package $nm not found")
+    end
+
+    p = packages[nm]
+    for env in p.envs
+        update(env, nm)
+    end
+end
+
 function update(nm::AbstractString; warn_if_missing=false)
     isenv = startswith(nm, "@")
     if isenv
         env = getenvinfo(nm)
         update(env)
     else
-        packages = list_shared_packages()
-        if !haskey(packages, nm) 
-            warn_if_missing && (@warn "Package $nm not found" ;return nothing)
-            error("Package $nm not found")
-        end
-
-        p = packages[nm]
-        for env in p.envs
-            update(env, nm)
-        end
-    end
+        update_package(nm)
     return nothing
+end
+
 end
 
 function update(env::AbstractString, pkgs::Union{AbstractString, Vector{<:AbstractString}}; warn_if_missing=false) 

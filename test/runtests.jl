@@ -143,4 +143,4 @@ end
     append!(Base.LOAD_PATH, load_path)
 end # @safetestset
 
-include("envs_manipulations.jl")
+@safetestset "Env Manipulations" include("envs_manipulations.jl")

@@ -93,11 +93,11 @@ end
 
 """
     update()
-    update(nm::AbstractString)
-    update(nm::Vector{<:AbstractString})
-    update(env::AbstractString, pkgs::Union{AbstractString, Vector{<:AbstractString}}) 
-    update(env::EnvInfo, pkgs::Union{Nothing, S, Vector{S}} = Nothing) where S <: AbstractString
-    update(p::Pair{<:AbstractString, <:AbstractString})
+    update(nm::AbstractString; warn_if_missing=false)
+    update(nm::Vector{<:AbstractString}; warn_if_missing=true)
+    update(env::AbstractString, pkgs::Union{AbstractString, Vector{<:AbstractString}}; warn_if_missing=true) 
+    update(env::EnvInfo, pkgs::Union{Nothing, S, Vector{S}} = Nothing; warn_if_missing=false) where S <: AbstractString
+    update(p::Pair{<:AbstractString, <:AbstractString}; warn_if_missing=false)
 
 - Called with no arguments, updates all shared environments.
 - Called with a single argument `nm::String` starting with "@", updates the shared environment `nm`.
@@ -105,6 +105,10 @@ end
 - Called with a single argument `nm::Vector{String}`, updates the packages and/or environments in `nm`.
 - Called with two arguments `env` and `pkgs`, updates the package(s) `pkgs` in the environment `env`.
 - Called with an argument `env => pkg`, updates the package `pkg` in the environment `env`.
+
+# kwarg
+- `warn_if_missing::Bool=true` - if env or pkg not found, issues a warning, otherwise would throw an error
+
 
 If Julia version supports version-specific manifest, then on any updates a versioned manifest will be created in each updated env.
 See also [`make_current_mnf`](@ref).
@@ -156,7 +160,37 @@ function update(env::EnvInfo, pkgs::Union{Nothing, AbstractString, Vector{<:Abst
     return nothing
 end
 
-function update_package(nm; warn_if_missing=false)
+function update()
+    envinfos = shared_environments_envinfos().shared_envs
+    for env in envinfos |> values
+        update(env)
+    end
+    return nothing
+end
+
+# if just one name is specified, would normally throw an error if not found
+function update(nm::AbstractString; warn_if_missing=false)
+    isenv = startswith(nm, "@")
+    if isenv
+        env = getenvinfo(nm)
+        update(env; warn_if_missing)
+    else
+        update_package(nm; warn_if_missing)
+    end
+    return nothing
+end
+
+# if just one name is specified, would normally throw an error if not found
+function update(env::AbstractString, pkgs::Union{AbstractString, Vector{<:AbstractString}}; warn_if_missing=false) 
+    startswith(env, "@") || error("Name of shared environment must start with @")
+    update(EnvInfo(env), pkgs; warn_if_missing)
+end
+
+update(nm::Vector{<:AbstractString}; warn_if_missing=true) = (update.(nm; warn_if_missing); return nothing)
+
+update(p::Pair{<:AbstractString, <:AbstractString}; warn_if_missing=false) = update(p.first, p.second; warn_if_missing)
+
+function update_package(nm; warn_if_missing)
     packages = list_shared_packages()
     if !haskey(packages, nm) 
         warn_if_missing && (@warn "Package $nm not found" ;return nothing)
@@ -168,36 +202,6 @@ function update_package(nm; warn_if_missing=false)
         update(env, nm)
     end
 end
-
-function update()
-    envinfos = shared_environments_envinfos().shared_envs
-    for env in envinfos |> values
-        update(env)
-    end
-    return nothing
-end
-
-function update(nm::AbstractString; warn_if_missing=false)
-    isenv = startswith(nm, "@")
-    if isenv
-        env = getenvinfo(nm)
-        update(env; warn_if_missing)
-    else
-        update_package(nm; warn_if_missing)
-    return nothing
-end
-
-end
-
-function update(env::AbstractString, pkgs::Union{AbstractString, Vector{<:AbstractString}}; warn_if_missing=false) 
-    startswith(env, "@") || error("Name of shared environment must start with @")
-    update(EnvInfo(env), pkgs; warn_if_missing)
-end
-
-update(nm::Vector{<:AbstractString}; warn_if_missing=true) = (update.(nm; warn_if_missing); return nothing)
-
-update(p::Pair{<:AbstractString, <:AbstractString}; warn_if_missing=true) = update(p.first, p.second; warn_if_missing)
-
 @kwdef mutable struct AcceptedKwargs
     update_pkg::Bool = false
     update_env::Bool = false

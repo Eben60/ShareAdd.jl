@@ -1,5 +1,6 @@
 using Test
 using ShareAdd
+using ShareAdd: cleanup_testenvs, testfolder_prefix
 using SafeTestsets
 
 ShareAdd.env_folders(; create=true)
@@ -8,7 +9,7 @@ ShareAdd.env_folders(; create=true)
 @safetestset "Aqua" include("tests_aqua.jl")
 
 include("testing_utilities.jl")
-using .TestUtilities: cleanup, testfolder_prefix
+using .TestUtilities: cleanup_testenvs, testfolder_prefix
 
 @safetestset "optimset" include("tests_optimset.jl")
 @safetestset "registries" include("tests_registries.jl")
@@ -21,4 +22,4 @@ using .TestUtilities: cleanup, testfolder_prefix
 @safetestset "reset" include("tests_reset.jl")
 @safetestset "Env Manipulations" include("tests_envs_manipulations.jl")
 
-cleanup(testfolder_prefix)
+cleanup_testenvs()

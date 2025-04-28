@@ -34,7 +34,9 @@ $(isnothing(get(ENV, "CI", nothing)) ? ("\n" * "Package local path: " * pathof(S
 module ShareAdd
 using TOML, Pkg
 using REPL.TerminalMenus
-# using OrderedCollections
+
+
+const testfolder_prefix = "z2del-0nzj"
 
 include("types.jl")
 include("optimset.jl")
@@ -55,5 +57,8 @@ end
 
 using PrecompileTools: @compile_workload
 include("precompile.jl")
+
+__init__() = cleanup_testenvs()
+
 
 end # module ShAdd

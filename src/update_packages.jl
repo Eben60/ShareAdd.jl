@@ -236,3 +236,11 @@ function update_all()
     update()
     return nothing
 end
+
+"Removes folders created in the ~/.julia/environments/ folder during the testing. Used in the test suite, but also on the package startup just for the case the test errored."
+function cleanup_testenvs()
+    for f in readdir(env_folders().envs_folder, join=true)
+        startswith(basename(f), testfolder_prefix) && rm(f, recursive=true)
+    end
+    return nothing
+end

@@ -1,20 +1,8 @@
 module TestUtilities
 using ..ShareAdd
+using ShareAdd: testfolder_prefix # , cleanup_testenvs
 using Random
 using TOML
-
-testfolder_prefix = "z2del-0nzj"
-export testfolder_prefix
-
-
-function cleanup(fld_prefx)
-    envf = ShareAdd.env_folders
-    for f in readdir(envf().envs_folder, join=true)
-        startswith(basename(f), fld_prefx) && rm(f, recursive=true)
-    end
-    return nothing
-end
-export cleanup
 
 function make_tmp_env(folder)
     name = "$(testfolder_prefix)$(randstring(10))" |> lowercase

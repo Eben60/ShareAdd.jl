@@ -9,7 +9,6 @@ ShareAdd.env_folders(; create=true)
 @safetestset "Aqua" include("tests_aqua.jl")
 
 include("testing_utilities.jl")
-using .TestUtilities: cleanup_testenvs, testfolder_prefix
 
 @safetestset "optimset" include("tests_optimset.jl")
 @safetestset "registries" include("tests_registries.jl")

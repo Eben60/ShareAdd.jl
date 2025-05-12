@@ -1,37 +1,29 @@
-function showenv(item=nothing)
-    dep_path = first(DEPOT_PATH)
-    isdir(dep_path) || error("$(dep_path) folder doesn't exist.")
-    envs_folder = joinpath(dep_path, "environments")
-    
-    if isnothing(item)
-        if isdir(envs_folder) 
-            open_file(envs_folder)
-            return nothing
-        else
-            @warn "The environments folder doesn't exist. Opening the Julia depot folder instead."
-            open_file(dep_path)
-        end
-    end
+"actual function is in the DesktopExt extension"
+showenv() = nothing
 
-    if item == "stdlib"
-        path = Sys.STDLIB
-    else
-        path = joinpath(envs_folder, item)
-    end
+"""
+    @showenv
+    @showenv item 
 
-    if isdir(path)
-        open_file(path)
-        return nothing
-    else
-        (; envs) = ShareAdd.info(item; std_lib=true, disp_rslt=false, ret_rslt=true)
-        isempty(envs) && @warn "Package $item is not found in any shared environment"
-        for env in envs
-            @show env
-            showenv(env)
-        end
-    end
+Open (shared) environment folder in your desktop GUI. The utility of this macro is that it makes it easy to access these
+folders in your OS, which might otherwise require some jumping through hoops, as these are located in the hidden folder ~/.julia/
 
-    return nothing
+This macro is exported.
+
+# Examples
+```julia-repl
+julia> @showenv # called without arguments, opens the "environments" folder which contains all shared environments
+julia> @showenv Revise # open the environment folder(s) which contain the Revise package
+julia> @showenv "Revise" # both quoted and unquoted forms of the argument are OK provided arg is a single word
+julia> @showenv Math # opens the folder of the shared env @Math
+```
+"""
+macro showenv(item="")
+    isnothing(item) || (item = string(item))
+
+    expr = """using Desktop: open_file; showenv("$(item)") """
+    q = Meta.parse(expr)
+    return q
 end
 
-export showenv
+export @showenv

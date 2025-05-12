@@ -15,9 +15,7 @@ _2025-01-24_
 
 ### Release 2.0.3 & 2.0.4
 
-_2025-01-19_ , _2025-01-21_ 
-
-#### Summary
+_2025-01-19_ , _2025-01-21_
 
 - Substantially extended tests coverage. 
 - Fixed a minor bug or two.

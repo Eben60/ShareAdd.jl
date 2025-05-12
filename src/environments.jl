@@ -359,15 +359,8 @@ julia> using Foo: bazaar as baz  # @usingany Foo: bazaar as baz is not a support
 This function is public, not exported.
 """
 function make_importable(packages)
-    allloaded = true
-    for p in packages
-        p_sym = Symbol(p)
-        if !(isdefined(Main, p_sym) && getproperty(Main, p_sym) isa Module)
-            allloaded = false
-            break
-        end
-    end
-    allloaded && return :success
+
+    package_loaded(packages) && return :success
 
     (; inshared_pkgs, installable_pkgs, unavailable_pkgs, shared_pkgs, current_pr) = check_packages(packages)
     isempty(unavailable_pkgs) || error("The following packages are not available from any registry: $unavailable_pkgs")
@@ -391,6 +384,18 @@ function make_importable(packages)
     end
 
     return :success
+end
+
+function package_loaded(p)
+    p_sym = Symbol(p)
+    return (isdefined(Main, p_sym) && getproperty(Main, p_sym) isa Module)
+end
+
+function package_loaded(ps::Vector)
+    for p in ps
+        package_loaded(p) || return false
+    end
+    return true
 end
 
 function make_importable(arg::AbstractString, args...)

@@ -16,7 +16,7 @@ The macro can be called with keyword arguments:
 
 - `update_pkg::Bool`: if set to `true`, first updates the package(s) to be imported by the macro
 - `update_env::Bool`: first update the shared environments currently in the `LOAD_PATH`
-- `update_all::Bool`: first update the package to be imported in ALL shared environments where it is present
+- `update_all::Bool`: first update ALL shared environments as well as the current project
 
 If Julia version supports versioned manifests, on any updates a versioned manifest will be created in each updated env.
 See also [`make_current_mnf`](@ref) and [`update`](@ref).

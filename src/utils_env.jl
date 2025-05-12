@@ -116,13 +116,10 @@ function delete_shared_pkg(p::Pair{EnvInfo, <:AbstractString}; force = false)
     e, pkname = p
     nowempty = false
     
-    if e.in_path && pkg_isloaded(pkname) && !force
-        @warn """The env "$(e.name)" is in path, and package "$(pkname)" is loaded. It will not be removed from "$(e.name)"."""
-    else
-        (length(e.pkgs) == 1) && !e.standard_env && (nowempty = true)
-        Pkg.activate(e.path)
-        Pkg.rm(pkname)
-    end
+    (length(e.pkgs) == 1) && !e.standard_env && (nowempty = true)
+    Pkg.activate(e.path)
+    Pkg.rm(pkname)
+
     return (; nowempty)
 end
 

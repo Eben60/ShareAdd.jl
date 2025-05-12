@@ -14,8 +14,9 @@ There are also utility functions in ShareAdd that may help you manage shared env
 - [`ShareAdd.info`](@ref): lists information about shared envs and/or packages. 
 - [`ShareAdd.update`](@ref): updates packages or environments
 - [`ShareAdd.delete`](@ref): deletes packages or environments
+- [`@showenv`](@ref): opens environment folders in your desktop GUI.
 
-These are all public, but not exported to avoid name conflicts.
+The functions are public, but not exported to avoid possible name conflicts. The `@showenv` macro is exported.
 
 # Examples
 ```julia-repl
@@ -35,6 +36,7 @@ module ShareAdd
 using TOML, Pkg
 using REPL.TerminalMenus
 
+# using Desktop # TODO replace by extension later on
 
 const testfolder_prefix = "z2del-0nzj"
 
@@ -46,6 +48,7 @@ include("utils_env.jl")
 include("update_packages.jl")
 include("temporary_envs.jl")
 include("macros.jl")
+include("showenv.jl")
 
 export @usingany, @usingtmp
 

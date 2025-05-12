@@ -1,15 +1,17 @@
 name = "ShareAdd"
 uuid = "27c01619-3163-4fe3-a204-36d38c32eb7d"
 authors = ["Eben60"]
-version = "2.1.1"
+version = "2.2.0"
 
 [deps]
+Desktop = "b29a95c0-35db-4866-a636-e016a4ee858a"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
 REPL = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 
 [compat]
+Desktop = "0.1.1"
 Pkg = "<0.0.1, 1"
 PrecompileTools = "1.2.1"
 REPL = "<0.0.1, 1"

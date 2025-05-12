@@ -35,6 +35,7 @@ module ShareAdd
 using TOML, Pkg
 using REPL.TerminalMenus
 
+using Desktop # TODO replace by extension later on
 
 const testfolder_prefix = "z2del-0nzj"
 
@@ -46,6 +47,7 @@ include("utils_env.jl")
 include("update_packages.jl")
 include("temporary_envs.jl")
 include("macros.jl")
+include("showenv.jl")
 
 export @usingany, @usingtmp
 

@@ -25,7 +25,7 @@ function env_folders(; depot = first(DEPOT_PATH), create=false)
 end
 
 """
-    shared_environments_envinfos(; depot = first(DEPOT_PATH)) -> 
+    shared_environments_envinfos(; std_lib=false, depot = first(DEPOT_PATH)) -> 
         (; shared_envs::Dict{name, EnvInfo},
         envs_folder_path::String, 
         shared_env_names::Vector{String})

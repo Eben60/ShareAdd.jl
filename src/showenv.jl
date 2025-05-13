@@ -19,8 +19,14 @@ julia> @showenv Math # opens the folder of the shared env @Math
 ```
 """
 macro showenv(item="")
-    isnothing(item) || (item = string(item))
+    info = "The additional package Desktop.jl is needed to open a folder in your desktop GUI. \n" *
+        "It is currently not installed. You will be prompted to install it in a shared folder. \n\n"
 
+    (; installable_pkgs) = check_packages("Desktop")
+    isempty(installable_pkgs) || @info info
+    make_importable("Desktop")
+
+    isnothing(item) || (item = string(item))
     expr = """using Desktop: open_file; showenv("$(item)") """
     q = Meta.parse(expr)
     return q

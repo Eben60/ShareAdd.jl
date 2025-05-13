@@ -494,6 +494,7 @@ end
 
 function prompt2install(new_package::AbstractString; envs = shared_environments_envinfos().shared_envs)
     envs isa Dict && (envs = envs |> values |> collect)
+    sort!(envs, by=x -> x.name)
     currproj = current_env()
     currproj.shared || push!(envs, currproj)
 

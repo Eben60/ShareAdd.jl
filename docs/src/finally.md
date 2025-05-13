@@ -2,9 +2,15 @@
 
 ### Release 2.1.1
 
+_2025-05-XX_ 
+
+- Added [`@showenv`](@ref) macro, which allows to open the environment folder in your desktop file manager.
+
+### Release 2.1.1
+
 _2025-04-28_ 
 
-Some fixes and refactoring, esp. of the test suite.
+- Some fixes and refactoring, esp. of the test suite.
 
 ### Release 2.1.0
 

@@ -1,3 +1,7 @@
+const Force = 1
+const Ask = 0
+const Skip = -1
+
 """
     delete(nms::Union{String, Vector{String}}; inall=false, force = false) -> nothing
     delete(nm::AbstractString; inall=false, force = false) -> nothing
@@ -27,13 +31,15 @@ julia> ShareAdd.delete("@Foo" => "bar")
 
 This function is public, not exported.
 """
-function delete(nms::AbstractVector{<:AbstractString}; inall=false, force = false)
+function delete(nms::AbstractVector{<:AbstractString}; inall=Ask, force = Ask)
+    force = force |> Int
     all_same_art(nms) || error("List of names must be either all environments or all packages")
     delete.(nms; inall, force)
     return nothing
 end
 
-function delete(nm::AbstractString; inall=false, force = false)
+function delete(nm::AbstractString; inall=Ask, force = Ask)
+    force = force |> Int
     if startswith(nm, "@")
         delete_shared_env(nm; force)
     else
@@ -42,10 +48,10 @@ function delete(nm::AbstractString; inall=false, force = false)
     return nothing
 end
 
-function delete(p::Pair{<:AbstractString, <:AbstractString}; force = false)
+function delete(p::Pair{<:AbstractString, <:AbstractString}; force = Ask)
     curr_env = current_env()
     e = EnvInfo(p.first)
-    delete_shared_pkg(p; force).nowempty && _delete_empty_envs([e], curr_env; force)
+    delete_shared_pkg(p; force).now_empty && _delete_empty_envs([e], curr_env; force)
     return nothing
 end
 
@@ -54,18 +60,22 @@ end
 
 Deletes the shared environment `env` by erasing it's directory. Set `force=true` if you want to delete the environment even if it is currently in `LOAD_PATH`.
 
-Returns `nothing`.
+Returns `true`, if the environment has been deleted, and `false` otherwise.
 """
-function delete_shared_env(e::EnvInfo; force = false)
-    if e.in_path && !force
-        @warn """The env "$(e.name)" is in Path. It will not be removed from "$(e.name)"."""
-    else
-        rm(e.path; recursive=true);
+function delete_shared_env(e::EnvInfo; force)
+    if e.in_path 
+        if force == Skip
+            @warn """The env "$(e.name)" is in Path. It will not be removed."."""
+            return false
+        elseif force == Ask
+            askifdelete(e) || return false
+        end
     end
-    return nothing
+    rm(e.path; recursive=true);
+    return true
 end
 
-function delete_shared_env(s::AbstractString; force = false)
+function delete_shared_env(s::AbstractString; force)
     startswith(s, "@") || error("Name of shared environment must start with @")
     s = s[2:end]
 
@@ -74,34 +84,63 @@ function delete_shared_env(s::AbstractString; force = false)
 end
 
 """
-    delete_shared_pkg(pkg::AbstractString; inall=false)
+    delete_shared_pkg(pkg::AbstractString; inall, force)
+    delete_shared_pkg(p::Pair{EnvInfo, <:AbstractString}; force)
+    delete_shared_pkg(p::Pair{<:AbstractString, <:AbstractString}; force)
 
 Deletes the package `pkg` from it's shared environment. Deletes this environment if it was the only package there.
 If the package may be present in multiple environments, and you want to delete it from all of them, set `inall=true`.
-Set `force=true` if you want to delete the package even if it is currently loaded.
+Set `force=true` if you want to delete the package even if it is currently loaded, and it's env, 
+in case it is empty then, even if it is in `LOAD_PATH`.
 
-Returns `nothing`.
+Returns NamedTuple (; success, now_empty), where `now_empty` is a flag for the containing environment being now empty.
 """
-function delete_shared_pkg(pkname::AbstractString; inall=false, force = false)
+function delete_shared_pkg(pkname::AbstractString; inall, force)
     curr_env = current_env()
     pkinfos = list_shared_packages(; std_lib = false) # packages in stdlib are not deleteable
     haskey(pkinfos, pkname) || error("Package $(pkname) not found in any shared environment")
 
     p = pkinfos[pkname]
+
+    suggestion = "Remove it manually, or call specify env in the call `ShareAdd.delete(env=>pkg)`, or set `inall=true`."
     
-    length(p.envs) > 1 && !inall && 
-        error("Package $pkname is present in multiple environments $([env.name for env in p.envs]). Remove it manually, or set `inall=true`.")
+    if length(p.envs) > 1 
+        if inall == Skip
+            return error(
+                "Package $pkname is present in multiple environments $([env.name for env in p.envs])." *
+                suggestion
+            )
+        elseif inall == Ask
+            if !askifdelete(p)
+                @info "Package $pkname was not deleted. $suggestion"
+                return (; success=false, now_empty=false)
+            end
+        end
+    end
  
     emptyenvs = EnvInfo[]
     for e in p.envs
-        (; nowempty) = delete_shared_pkg(e => pkname; force)
-        nowempty && push!(emptyenvs, e)
+        (; now_empty) = delete_shared_pkg(e => pkname; force)
+        now_empty && push!(emptyenvs, e)
     end
 
     _delete_empty_envs(emptyenvs, curr_env; force)
 
-    return nothing
+    return (; success=false, now_empty=missing)
 end
+
+function delete_shared_pkg(p::Pair{EnvInfo, <:AbstractString}; force = false)
+    e, pkname = p
+    now_empty = false
+    
+    (length(e.pkgs) == 1) && !e.standard_env && (now_empty = true)
+    Pkg.activate(e.path)
+    Pkg.rm(pkname)
+
+    return (; success=true, now_empty)
+end
+
+delete_shared_pkg(p::Pair{<:AbstractString, <:AbstractString}; force = false) = delete_shared_pkg(EnvInfo(p.first) => p.second; force)
 
 function _delete_empty_envs(emptyenvs::AbstractVector{EnvInfo}, curr_env; force = false)
     Pkg.activate(curr_env.path)
@@ -111,19 +150,6 @@ function _delete_empty_envs(emptyenvs::AbstractVector{EnvInfo}, curr_env; force 
     end
     return nothing
 end
-
-function delete_shared_pkg(p::Pair{EnvInfo, <:AbstractString}; force = false)
-    e, pkname = p
-    nowempty = false
-    
-    (length(e.pkgs) == 1) && !e.standard_env && (nowempty = true)
-    Pkg.activate(e.path)
-    Pkg.rm(pkname)
-
-    return (; nowempty)
-end
-
-delete_shared_pkg(p::Pair{<:AbstractString, <:AbstractString}; force = false) = delete_shared_pkg(EnvInfo(p.first) => p.second; force)
 
 pkg_isloaded(pkg) = String(pkg) in [k.name for k in keys(Main.Base.loaded_modules)]
 
@@ -140,4 +166,22 @@ function reset()
     empty!(LOAD_PATH)
     append!(LOAD_PATH, default_paths)
     return nothing  
+end
+
+function askifdelete(p::PackageInfo)
+    info = 
+        "Package $pkname is present in multiple environments $([env.name for env in p.envs]). Should we delete it from all of them?"
+    return askifdelete(info)
+end
+
+function askifdelete(e::EnvInfo)
+    info = 
+        "Environment $(e.name) is currently in the `LOAD_PATH`. Should we delete it despite that?"
+    return askifdelete(info)
+end
+
+function askifdelete(s::AbstractString)
+    println("$s [y/n]")
+    answer = readline()
+    return lowercase(answer) in ["y", "yes"]
 end

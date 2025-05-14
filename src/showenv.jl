@@ -31,5 +31,3 @@ macro showenv(item="")
     q = Meta.parse(expr)
     return q
 end
-
-export @showenv

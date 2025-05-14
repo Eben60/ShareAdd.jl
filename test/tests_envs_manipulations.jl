@@ -178,12 +178,12 @@ end # "update"
     @suppress begin
     using ShareAdd: delete
     @test isdir(e3.path)
-    delete("@$(e3.name)")
+    delete("@$(e3.name)"; inall=true, force=true)
     @test !isdir(e3.path)
 
     @test isnothing(delete("@$(e4.name)" => "ShareAdd"))
     @test !isdir(e4.path)
-    @test_throws ErrorException delete(fp1.name)
+    @test_warn r"aborting" delete(fp1.name; inall=SKIPPING, force=SKIPPING)
     if VERSION >= v"1.11" # deleting with faked project would throw on 1.10 
         delete(fp1.name; inall=true) 
         @test !isdir(e1.path)

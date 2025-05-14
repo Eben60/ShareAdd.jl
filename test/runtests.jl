@@ -1,11 +1,10 @@
-using Test
 using ShareAdd
-using ShareAdd: cleanup_testenvs, testfolder_prefix
+using ShareAdd: cleanup_testenvs
+
 using SafeTestsets
 
 ShareAdd.env_folders(; create=true)
 
-# alltests = !(isdefined(@__MODULE__, :complete_tests) && !complete_tests)
 @safetestset "Aqua" include("tests_aqua.jl")
 
 include("testing_utilities.jl")

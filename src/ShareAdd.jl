@@ -51,6 +51,9 @@ include("macros.jl")
 include("showenv.jl")
 
 export @usingany, @usingtmp
+export @showenv
+export SkipAskForceEnum
+export SKIPPING, ASKING, FORCING
 
 if VERSION >= v"1.11.0-DEV.469"
     include("public.julia")

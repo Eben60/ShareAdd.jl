@@ -7,14 +7,14 @@
 
 # ShareAdd.jl
 
-This Julia package is intended for interactive use, and it's aim is to help you in reducing clutter in your main shared environment, and thus avoid package incompatibility problems. It exports two macros: [`@usingany`](@ref) and [`@usingtmp`](@ref), envisioned for two different workflows. The package also provides several [utility functions](@ref "Some other functions and usage cases") for managing shared environments.
+This Julia package helps to reduce clutter in your main shared environment (and thus avoid package incompatibility problems) by making it easy to use multiple shared or temporary environments. It exports two macros: [`@usingany`](@ref) and [`@usingtmp`](@ref), envisioned for two different workflows. The package also provides several [utility functions](@ref "Some other functions and usage cases") for managing shared environments.
 
 ## `@usingany` macro
 
 This macro makes package(s) available, if they are not already, and loads them with `using` keyword.
 
-- If a package is available in an environment in LOAD_PATH, that's OK.
-- If a package is available in a [shared environment](https://pkgdocs.julialang.org/v1/environments/#Shared-environments), this environment will be pushed into LOAD_PATH.
+- If a package is available in an environment in `LOAD_PATH`, that's OK.
+- If a package is available in a [shared environment](https://pkgdocs.julialang.org/v1/environments/#Shared-environments), this environment will be pushed into `LOAD_PATH`.
 - Otherwise if it can be installed, you will be prompted to select an environment to install the package(s).
 - If the package is not listed in any registry, an error will be thrown. 
 
@@ -75,7 +75,7 @@ using ShareAdd
 
 ## Versioned manifests
 
-If currently used Julia version supports [versioned manifests](https://pkgdocs.julialang.org/v1/toml-files/#Different-Manifests-for-Different-Julia-versions) (i.e. >= v1.11), then on any updates using `ShareAdd` package (see [`ShareAdd.update`](@ref)), a versioned manifest will be created in each updated env. The function [`ShareAdd.make_current_mnf`](@ref) can also be used to create a versioned manifest in a specified environment without updating it.
+If your currently used Julia version supports [versioned manifests](https://pkgdocs.julialang.org/v1/toml-files/#Different-Manifests-for-Different-Julia-versions) (i.e. >= v1.10.8), then on any updates using `ShareAdd` package (see [`ShareAdd.update`](@ref)), a versioned manifest will be created in each updated env. The function [`ShareAdd.make_current_mnf`](@ref) can also be used to create a versioned manifest in a specified environment without updating it.
 
 ## `@usingtmp` macro
 
@@ -98,9 +98,9 @@ using ShareAdd
 
 ## Some other functions and usage cases
 
-The functions [`ShareAdd.info()`](@ref), [`ShareAdd.update()`](@ref), [`ShareAdd.delete()`](@ref) do what their names say.
+The macro [`@showenv`](@ref) (with or without arguments) will open an environment folder in your desktop GUI, saving you from a bit of hassle of getting to hidden folder.
 
-__TODO__ [`@showenv`](@ref)
+The functions [`ShareAdd.info()`](@ref), [`ShareAdd.update()`](@ref), [`ShareAdd.delete()`](@ref) do what their names say.
 
 The function [`ShareAdd.make_importable`](@ref) also does what it says. It is used internally by [`@usingany`](@ref), but it can also be used separately in special cases, e.g. if you need `using A as B` syntax, or want to import a package via `import` statement instead of `using`:
 
@@ -109,6 +109,46 @@ using ShareAdd: make_importable
 make_importable("Foo")
 import Foo
 ```
+
+## Workflow for upgrading Julia or moving to a different computer.
+
+### Upgrading Julia
+
+Each Julia minor version has it's main shared environment in the correspondingly named folder, e.g. for Julia v1.11 the folder name is `v1.11`, for the next version it will be `v1.12`. All other shared environments are commonly used by all Julia versions. 
+
+For an upgrade e.g. from Julia v1.11 to v1.12 you can proceed as following:
+
+- Before the very first run of Julia v1.12, make a copy of `v1.11` folder, and name it `v1.12`. You can use [`@showenv`](@ref) macro without arguments to open the environments folder in your desktop GUI. 
+  - Then, upon upgrade to Julia v1.12, update first the new main environment from the `Pkg` command line, 
+  - then update all shared environments with the help of `ShareAdd`. `ShareAdd.update()` will create version-specific manifests, thus ensuring that you can use the same shared env with different versions of Julia without conflicts:
+
+```
+(SomeEnv) pkg> activate # calling activate without arguments will activate the main env
+  Activating project at `~/.julia/environments/v1.12`
+
+(@v1.12) pkg> update
+# update info
+
+julia> using ShareAdd
+
+julia> ShareAdd.update()
+# a lot of update infos
+```
+
+- Alternatively, if you have already run Julia v1.12 and thus the `v1.12` folder has already been created,
+  - add `ShareAdd` to your main environment,
+  - update all shared environments using `ShareAdd.update()`.
+
+### Moving to a different computer
+
+The procedure is in parts similar to described above for Julia upgrade.
+
+- Open the environments folder e.g. by calling [`@showenv`](@ref).
+- Copy all folders you want to transfer,
+- and paste them into the environments folder on the new computer.
+- If the main env folder (e.g. `v1.11`) was among the copied, `ShareAdd` is assumed to be installed, otherwise install it there.
+- Update the main environment from the `Pkg` command line.
+- Update all shared environments using `ShareAdd.update()`.  
 
 ## Reference
 
@@ -132,5 +172,5 @@ Filter = t -> (! Base.isexported(ShareAdd, nameof(t)) && Base.ispublic(ShareAdd,
 ```@autodocs
 Modules = [ShareAdd]
 Order   = [:type, ]
-Filter = t -> (! Base.isexported(ShareAdd, nameof(t)) && Base.ispublic(ShareAdd, nameof(t)))
+Filter = t -> (Base.isexported(ShareAdd, nameof(t)) || Base.ispublic(ShareAdd, nameof(t)))
 ```

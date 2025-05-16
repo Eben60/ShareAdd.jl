@@ -14,7 +14,7 @@ This macro is exported.
 ```julia-repl
 julia> @showenv # called without arguments, opens the "environments" folder which contains all shared environments
 julia> @showenv Revise # open the environment folder(s) which contain the Revise package
-julia> @showenv "Revise" # both quoted and unquoted forms of the argument are OK provided arg is a single word
+julia> @showenv "Revise" # both quoted and unquoted forms of the argument are OK
 julia> @showenv Math # opens the folder of the shared env @Math
 ```
 """

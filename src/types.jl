@@ -4,14 +4,20 @@
 
 - `name::String` - name of the environment
 - `path::String` - path of the environment's folder
-- `pkgs::Vector{String}` - list of packages in the environment
+- `pkgs::Set{String}` - list of packages in the environment
 - `in_path::Bool` - whether the environment is in `LOAD_PATH` 
+- `standard_env::Bool = false` - if the env is the standard one (which is in the `v1.11` folder for Julia v1.11)
+- `shared::Bool = true` - if shared env
+- `temporary::Bool = false` - if temporary env
+- `active_project::Bool = false` - if active project
 
 # Examples
 ```julia-repl
 julia> ShareAdd.EnvInfo("@DocumenterTools")
 ShareAdd.EnvInfo("DocumenterTools", "/Users/eben60/.julia/environments/DocumenterTools", Set(["DocumenterTools"]), false, false, true, false, false)
 ```
+
+This type is public, not exported.
 """
 @kwdef mutable struct EnvInfo
     name::String = ""
@@ -35,6 +41,8 @@ Base.:copy(e::EnvInfo) = EnvInfo(e.name, e.path, copy(e.pkgs), e.in_path, e.stan
 - `name::String` - name of the package
 - `envs::Vector{EnvInfo}` - list of environments in which the package is present
 - `in_path::Bool` - whether any of the environments is in `LOAD_PATH`
+
+This type is public, not exported.
 """
 mutable struct PackageInfo
     const name::String

@@ -16,7 +16,7 @@ Prints out and/or returns information about shared environments.
 
 This function is public, but **not exported**, as to avoid possible name conflicts. 
 
-    # Examples
+# Examples
 ```julia-repl
 julia> ShareAdd.info(["BenchmarkTools", "Chairmarks"])
 The following packages are not in any shared env:

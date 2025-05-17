@@ -2,11 +2,11 @@
 
 ### Release 2.2.0
 
-_2025-05-XX_ 
+_2025-05-19_ 
 
 #### Semi-breaking change
 
-- Changed the default (i.e. without kwargs) behavior [`ShareAdd.delete(nm)`](@ref) or equivalently the behavior of [`ShareAdd.delete(nm; inall=false, force=false)`](@ref). Now, instead of skipping the deletion if a package is in multiple shared environments or env is in the `LOAD_PATH`, the function will open a user dialog. Futhermore, the kwargs now take triple-valued (force/ask/skip) arguments, for details see the docs. As the function is mostly expected to be called interactively, and behavior change, if relevant, will be obvious and should look reasonable to a user, the change was considered not "breaking enough" to warrant a new major version.
+- Changed the default (i.e. without kwargs) behavior [`ShareAdd.delete(nm)`](@ref) or equivalently the behavior of [`ShareAdd.delete(nm; inall=false, force=false)`](@ref). Now, instead of skipping the deletion if a package is in multiple shared environments, or if env is in the `LOAD_PATH`, the function will open a user dialog. Futhermore, the kwargs now take triple-valued (force/ask/skip) arguments, for details see the docs. As the function is mostly expected to be called interactively, and behavior change, if relevant, will be obvious and self-explaining, the change was considered not "breaking enough" to warrant a new major version.
 
 #### New feature
 

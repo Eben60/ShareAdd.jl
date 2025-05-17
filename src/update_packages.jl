@@ -99,7 +99,7 @@ end
     update(env::EnvInfo, pkgs::Union{Nothing, S, Vector{S}} = Nothing; warn_if_missing=false) where S <: AbstractString
     update(p::Pair{<:AbstractString, <:AbstractString}; warn_if_missing=false)
 
-- Called with no arguments, updates all shared environments.
+- Called without arguments, updates all shared environments.
 - Called with a single argument `nm::String` starting with "@", updates the shared environment `nm`.
 - Called with a single argument `nm::String` not starting with "@", updates the package `nm` 
     in all shared environments containing the package, as well as all it's downstream dependencies.

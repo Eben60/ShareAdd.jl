@@ -36,8 +36,6 @@ module ShareAdd
 using TOML, Pkg
 using REPL.TerminalMenus
 
-# using Desktop # TODO replace by extension later on
-
 const testfolder_prefix = "z2del-0nzj"
 
 include("types.jl")
@@ -52,7 +50,6 @@ include("showenv.jl")
 
 export @usingany, @usingtmp
 export @showenv
-export SkipAskForceEnum
 export SKIPPING, ASKING, FORCING
 
 if VERSION >= v"1.11.0-DEV.469"

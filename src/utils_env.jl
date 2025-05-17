@@ -10,7 +10,7 @@ Options for deletion of environments and packages.
 As `ShareAdd` is intended for interactive usage, and therefore the exported bindings are available in the `Main` module,
 we use the "-ing" form to reduce the probability of name collisions.
 
-This enum as well as it's values are exported. 
+The values of this enum are exported, whereas the enum type is public but not exported. 
 """
 @enum SkipAskForceEnum begin
     SKIPPING = -1
@@ -39,7 +39,7 @@ Both kwargs accept any integer types, including Bool, as well as enum [`SkipAskF
 `false` is equivalent to `ASKING`, and `true` to `FORCING`
 
 - `inall=ASKING`: If set to `FORCING`, would delete package from multiple environments, whereas with `SKIPPING`, it will skip without asking. Has no effect if provided `nms` is/are env name(s).
-- `force=ASKING`: If set to `FORCING`, would delete the env even if the env is currently in `LOAD_PATH`, and a package even if it is loaded.
+- `force=ASKING`: If set to `FORCING`, would delete the env even if the env is currently in `LOAD_PATH`, and remove a package even if it is loaded.
 
 # Examples
 ```julia-repl

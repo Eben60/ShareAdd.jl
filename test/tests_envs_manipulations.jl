@@ -178,7 +178,7 @@ end # "update"
     @suppress begin
     using ShareAdd: delete
     @test isdir(e3.path)
-    delete("@$(e3.name)")
+    delete("@$(e3.name)"; inall=true, force=true)
     @test !isdir(e3.path)
 
     @test isnothing(delete("@$(e4.name)" => "ShareAdd"))

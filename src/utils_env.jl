@@ -72,7 +72,7 @@ end
 function delete(p::Pair{<:AbstractString, <:AbstractString}; force = ASKING)
     curr_env = current_env()
     e = EnvInfo(p.first)
-    delete_shared_pkg(p; force).now_empty && _delete_empty_envs([e], curr_env; force)
+    delete_shared_pkg(p; force).now_empty && _delete_empty_envs([e], curr_env)
     return nothing
 end
 
@@ -84,7 +84,7 @@ Deletes the shared environment `env` by erasing it's directory. Set `force=FORCI
 Returns `true`, if the environment has been deleted, and `false` otherwise.
 """
 function delete_shared_env(e::EnvInfo; force::SkipAskForceEnum)
-    if e.in_path 
+    if (force != FORCING) && e.in_path 
         if force == SKIPPING
             @warn """The env "$(e.name)" is in Path. It will not be removed."."""
             return false
@@ -92,6 +92,7 @@ function delete_shared_env(e::EnvInfo; force::SkipAskForceEnum)
             askifdelete(e) || return false
         end
     end
+    delete_from_loadpath("@$(e.name)")
     rm(e.path; recursive=true);
     return true
 end
@@ -102,6 +103,14 @@ function delete_shared_env(s::AbstractString; force::SkipAskForceEnum)
 
     env = shared_environments_envinfos().shared_envs[s]
     return delete_shared_env(env; force)
+end
+
+function delete_from_loadpath(e)
+    i = findfirst(isequal(e), LOAD_PATH)
+    if i !== nothing
+        deleteat!(LOAD_PATH, i)
+    end
+    return nothing
 end
 
 """
@@ -123,16 +132,29 @@ function delete_shared_pkg(pkname::AbstractString; inall::SkipAskForceEnum, forc
 
     p = pkinfos[pkname]
 
-    suggestion = """Remove it manually, or specify the env in the call e.g. `ShareAdd.delete("@$(p.envs[1].name)"=>"$(p.name)")`, or set `inall=true`."""
-    
-    if length(p.envs) > 1 
+    suggestion_loaded = "You may want to restart Julia, or you risk and call `delete` with kwarg `force=FORCING`."
+    if (force != FORCING) && module_isloaded(p)
+        if force == SKIPPING
+            @warn "Package $pkname is currently loaded - aborting deletion. " *
+                suggestion_loaded
+            return (; success=false, now_empty=false)
+        elseif force == ASKING
+            if !askifdelete(p, loaded=true)
+                @info "Package $pkname was not deleted."
+                return (; success=false, now_empty=false)
+            end
+        end
+    end
+
+    suggestion_envs = """Remove it manually, or specify the env in the call e.g. `ShareAdd.delete("@$(p.envs[1].name)"=>"$(p.name)")`, or set `inall=true`."""
+    if (inall != FORCING) && length(p.envs) > 1 
         if inall == SKIPPING
-            @warn "Package $pkname is present in multiple environments $([env.name for env in p.envs]) - aborting. " *
-                suggestion
+            @warn "Package $pkname is present in multiple environments $([env.name for env in p.envs]) - aborting deletion. " *
+                suggestion_envs
             return (; success=false, now_empty=false)
         elseif inall == ASKING
-            if !askifdelete(p)
-                @info "Package $pkname was not deleted. $suggestion"
+            if !askifdelete(p, loaded=false)
+                @info "Package $pkname was not deleted. $suggestion_envs"
                 return (; success=false, now_empty=false)
             end
         end
@@ -144,7 +166,7 @@ function delete_shared_pkg(pkname::AbstractString; inall::SkipAskForceEnum, forc
         now_empty && push!(emptyenvs, e)
     end
 
-    _delete_empty_envs(emptyenvs, curr_env; force)
+    _delete_empty_envs(emptyenvs, curr_env)
 
     return (; success=false, now_empty=missing)
 end
@@ -162,16 +184,17 @@ end
 
 delete_shared_pkg(p::Pair{<:AbstractString, <:AbstractString}; force) = delete_shared_pkg(EnvInfo(p.first) => p.second; force)
 
-function _delete_empty_envs(emptyenvs::AbstractVector{EnvInfo}, curr_env; force::SkipAskForceEnum)
+function _delete_empty_envs(emptyenvs::AbstractVector{EnvInfo}, curr_env)
     Pkg.activate(curr_env.path)
     for e in emptyenvs
-        delete_shared_env(e; force)
+        delete_shared_env(e; force=FORCING)
         @info "Deleted empty shared env $(e.name)"
     end
     return nothing
 end
 
-pkg_isloaded(pkg) = String(pkg) in [k.name for k in keys(Main.Base.loaded_modules)]
+module_isloaded(m) = string(m) in values(Base.loaded_modules) .|> Symbol .|> string
+module_isloaded(p::PackageInfo) = module_isloaded(p.name)
 
 """
     reset()
@@ -187,13 +210,18 @@ function reset()
     return nothing  
 end
 
-function askifdelete(p::PackageInfo)
-    envs = [env.name for env in p.envs]
-    info = "Package $(p.name) is present in multiple environments $(envs). Should we remove it from all of them?"
-    opt_yes = "Remove from all environments."
-    opt_no = "SKIPPING deleting. You can remove it later with the help of Pkg, " *
-        """or specify the env in the call, e.g. `ShareAdd.delete("@$(envs[1])"=>"$(p.name)")`, """ *
-        "or set `inall=true`."
+function askifdelete(p::PackageInfo; loaded)
+    if loaded
+        info = "Package $(p.name) is currently loaded. Are you sure you want to remove it from the environment(s)?"
+        opt_yes = "Yes, remove it."
+        opt_no = "SKIPPING removing for now. It is better to restart Julia, then remove it."
+    else
+        envs = [env.name for env in p.envs]
+        info = "Package $(p.name) is present in multiple environments $(envs). Should we remove it from all of them?"
+        opt_yes = "Remove from all environments."
+        opt_no = "SKIPPING deleting. You can remove it later with the help of Pkg, " *
+            """or specify the env in the call, e.g. `ShareAdd.delete("@$(envs[1])"=>"$(p.name)")`, """
+    end
     return askifdelete(info, opt_yes, opt_no)
 end
 

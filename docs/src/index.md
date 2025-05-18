@@ -9,6 +9,21 @@
 
 This Julia package helps to reduce clutter in your main shared environment (and thus avoid package incompatibility problems) by making it easy to use multiple shared or temporary environments. It exports two macros: [`@usingany`](@ref) and [`@usingtmp`](@ref), envisioned for two different workflows. The package also provides several [utility functions](@ref "Some other functions and usage cases") for managing shared environments.
 
+## Glossary
+
+*The definitions below deviate somewhat from the strict definitions of Environment, Project, and Package as given in the Julia docs, and refer to the most common and relevant cases.*
+
+- __Project File__: The `Project.toml` file in environment's folder. Its `deps` section lists packages available in this env. May contain additional data like compatibility requirements. [🔗](https://docs.julialang.org/en/v1/manual/code-loading/#Project-environments) 
+- __Manifest__: `TOML`-format file in environment's folder. It contains the actual state of the environment, including all indirect dependencies and their versions. Environment can contain multiple *Manifest* files for different Julia versions. [🔗](https://pkgdocs.julialang.org/v1/toml-files/#Manifest.toml) 
+- __Environment__: Simply a folder containing a `Project.toml` and optionally a *Manifest* file. Projects or packages are also environments. All packages in the `Project.toml` of the active environment are available for import. [🔗](https://docs.julialang.org/en/v1/manual/code-loading/#Environments)
+- __Shared Environment__: Any environment in the `path-to-Julia/.Julia/environments` folder. These environments can be addressed by prepending `@` to the env name, without typing it's whole path. Typically shared environments do not contain projects. [🔗](https://pkgdocs.julialang.org/v1/environments/#Shared-environments)
+- __Main / Default Environment__: The subfolder in the environments folder, named according to the Julia minor version , e.g. for Julia v1.11 it's name will be `v1.11`. This is the default env upon start of Julia, except Julia was started with some specific project. Especially for novices it is common to work in the default environment and install all packages therein. This may result in compat conflicts. The motivation to create `ShareAdd` was to help avoiding this kind of situaltion.
+- __`LOAD_PATH`__: An array of currently available environments. The default value is `["@", "@v#.#", "@stdlib"]`, where `"@"` refers to the current project, and `"@v#.#"` stands for the "main" env. Environments can be added both in the form of env folder paths, or, for shared envs, as the env name prepended by `@` - e.g. `["@", "@v#.#", "@stdlib", "@MyTools"]`. 
+- __Stacked Environments__: A concept of using multiple environments at the same time, so that the packages from each environment are available. Realized by having multiple (shared) envs in the `LOAD_PATH`. This is the main mechanism behind `ShareAdd`. [🔗](https://docs.julialang.org/en/v1/manual/code-loading/#Environment-stacks).
+- __Project__: A directory containing a `Project.toml` file as well as source and other relevant files. Project is a subtype of environment.
+- __Package__: Is a project adhering to a certain structure, which contains source files and other resources, suitable for distribution. Packages can be loaded with `using` or `import`. [🔗](https://docs.julialang.org/en/v1/manual/code-loading/#Package-directories) 
+
+
 ## `@usingany` macro
 
 This macro makes package(s) available, if they are not already, and loads them with `using` keyword.

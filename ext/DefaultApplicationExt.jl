@@ -8,8 +8,6 @@ function showenv(item)
     dep_path = first(DEPOT_PATH)
     isdir(dep_path) || error("$(dep_path) folder doesn't exist.")
     envs_folder = joinpath(dep_path, "environments")
-
-    @info "we are using DefaultApplication now"
     
     if isempty(item)
         if isdir(envs_folder) 

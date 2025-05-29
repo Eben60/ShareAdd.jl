@@ -448,7 +448,10 @@ function install_shared(p2i::NamedTuple)
     return nothing
 end
 
-env_prefix(env) = (env.shared && ! env.standard_env) ? "@" : ""
+function env_prefix(env)
+    startswith(env.name, "@") && return ""
+    (env.shared && ! env.standard_env) ? "@" : ""
+end
 
 function env_suffix(env)
     #TODO current, active, temporary, and all corner cases
@@ -486,37 +489,46 @@ The function will return `nothing` if the user selects "Quit. Do Nothing." on an
 """
 function prompt2install(packages::AbstractVector{<:AbstractString})
     to_install = []
+    newenvs = String[]
     for p in packages
-        e = prompt2install(p)
+        e = prompt2install(p, newenvs)
         isnothing(e) && return nothing
         push!(to_install, (; pkg=p, env=e))
+        (e isa AbstractString) && !(e in newenvs) && push!(newenvs, e)
     end
     return to_install
 end
 
-function prompt2install(new_package::AbstractString; envs = shared_environments_envinfos().shared_envs)
+function prompt2install(new_package::AbstractString, newenvs = String[]; envs = shared_environments_envinfos().shared_envs)
     envs isa Dict && (envs = envs |> values |> collect)
-    sort!(envs, by=x -> x.name)
+    envs = convert(Array{Any}, envs)
+
+    isempty(newenvs) || (newenvs = [(;standard_env=false, active_project=false, shared=true, name=lstrip(e, '@')) for e in newenvs]) # faking env
+    append!(envs, newenvs)
+    sort!(envs, by=x -> (x.standard_env, x.name |> lowercase))
+
     currproj = current_env()
     currproj.shared || push!(envs, currproj)
 
     options = [env_info2show(env) for env in envs]
-    push!(options, "A new shared environment (you will be prompted for the name)")
+    pushfirst!(options, "A new shared environment (you will be prompted for the name)")
     push!(options, "Quit. Do Nothing.")
     menu = RadioMenu(options)
 
-    println("Use the arrow keys to move the cursor. Press Enter to select.")
-    println("Please select a shared environment to install package $new_package")
+    @info "Use the arrow keys to move the cursor. Press Enter to select."
+    println("\n" * "Please select a shared environment to install package $new_package" * "\n")
 
     menu_idx = request(menu)
 
     if (menu_idx == length(options)) || menu_idx <= 0
         @info "Quiting. No action taken."
         return nothing
-    elseif menu_idx == length(options) - 1
+    elseif menu_idx == 1
         return prompt4newenv(new_package)
     else
-        return envs[menu_idx]
+        e = envs[menu_idx-1]
+        e isa EnvInfo && return e
+        return "@" * e.name
     end
 end
 

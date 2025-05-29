@@ -21,7 +21,7 @@ function versioned_mnfs(path)
 end
 
 is_main_env(path) = 
-    "v$(VERSION.major).$(VERSION.minor)" == (path |> abspath |> splitpath)[end] |> lowercase
+    main_env_name() == (path |> abspath |> splitpath)[end] |> lowercase
 
 function has_current_mnf(path)
     isdir(path) || return nothing

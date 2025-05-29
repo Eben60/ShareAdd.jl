@@ -15,7 +15,7 @@ If `create=true`, the main environment folder will be created if it does not exi
 """
 function env_folders(; depot = first(DEPOT_PATH), create=false)
     envs_folder = joinpath(depot, "environments")
-    main_env = joinpath(envs_folder, "v$(VERSION.major).$(VERSION.minor)")
+    main_env = joinpath(envs_folder, main_env_name())
     envs_exist = isdir(main_env)
     if create && !envs_exist 
         mkpath(main_env)
@@ -23,6 +23,8 @@ function env_folders(; depot = first(DEPOT_PATH), create=false)
     end
     return (; envs_folder, main_env, envs_exist)
 end
+
+main_env_name() = "v$(VERSION.major).$(VERSION.minor)"
 
 """
     shared_environments_envinfos(; std_lib=false, depot = first(DEPOT_PATH)) -> 

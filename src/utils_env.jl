@@ -89,7 +89,7 @@ function delete_shared_env(e::EnvInfo; force::SkipAskForceEnum)
             @warn """The env "$(e.name)" is in Path. It will not be removed."."""
             return false
         elseif force == ASKING
-            askifdelete(e) || return false
+            ask_yes_no(e) || return false
         end
     end
     delete_from_loadpath("@$(e.name)")
@@ -139,7 +139,7 @@ function delete_shared_pkg(pkname::AbstractString; inall::SkipAskForceEnum, forc
                 suggestion_loaded
             return (; success=false, now_empty=false)
         elseif force == ASKING
-            if !askifdelete(p, loaded=true)
+            if !ask_yes_no(p, loaded=true)
                 @info "Package $pkname was not deleted."
                 return (; success=false, now_empty=false)
             end
@@ -153,7 +153,7 @@ function delete_shared_pkg(pkname::AbstractString; inall::SkipAskForceEnum, forc
                 suggestion_envs
             return (; success=false, now_empty=false)
         elseif inall == ASKING
-            if !askifdelete(p, loaded=false)
+            if !ask_yes_no(p, loaded=false)
                 @info "Package $pkname was not deleted. $suggestion_envs"
                 return (; success=false, now_empty=false)
             end
@@ -171,13 +171,25 @@ function delete_shared_pkg(pkname::AbstractString; inall::SkipAskForceEnum, forc
     return (; success=false, now_empty=missing)
 end
 
-function delete_shared_pkg(p::Pair{EnvInfo, <:AbstractString}; force #= kwarg ignored =#)
-    e, pkname = p
+delete_shared_pkg(p::Pair{EnvInfo, <:AbstractString}; force #= kwarg ignored =#) =
+    delete_shared_pkg(p.first => [p.second]; force)
+
+
+function delete_shared_pkg(p::Pair{EnvInfo, <:AbstractVector{<:AbstractString}}; force #= kwarg ignored =#) 
+    e, pknames = p
+    all_pknames = copy(pknames)
+    for pkn in all_pknames
+        if !(pkn in e.pkgs)
+            @warn "$pkn was not installed in $(e.name). Ignoring."
+            filter!(x -> x != pkn, pknames)
+        end
+    end
+
     now_empty = false
     
-    (length(e.pkgs) == 1) && !e.standard_env && (now_empty = true)
+    now_empty = (length(e.pkgs) == length(pknames)) && !e.standard_env
     Pkg.activate(e.path)
-    Pkg.rm(pkname)
+    Pkg.rm(pknames)
 
     return (; success=true, now_empty)
 end
@@ -210,7 +222,7 @@ function reset()
     return nothing  
 end
 
-function askifdelete(p::PackageInfo; loaded)
+function ask_yes_no(p::PackageInfo; loaded)
     if loaded
         info = "Package $(p.name) is currently loaded. Are you sure you want to remove it from the environment(s)?"
         opt_yes = "Yes, remove it."
@@ -222,17 +234,17 @@ function askifdelete(p::PackageInfo; loaded)
         opt_no = "SKIPPING deleting. You can remove it later with the help of Pkg, " *
             """or specify the env in the call, e.g. `ShareAdd.delete("@$(envs[1])"=>"$(p.name)")`, """
     end
-    return askifdelete(info, opt_yes, opt_no)
+    return ask_yes_no(info, opt_yes, opt_no)
 end
 
-function askifdelete(e::EnvInfo)
+function ask_yes_no(e::EnvInfo)
     info = "Environment $(e.name) is currently in the `LOAD_PATH`. Should we delete it despite that?"
     opt_yes = "Delete"
     opt_no = """SKIPPING deleting. You can delete it later manually by trashing the folder or by calling `ShareAdd.delete("@$(e.name)")`."""
-    return askifdelete(info, opt_yes, opt_no)
+    return ask_yes_no(info, opt_yes, opt_no)
 end
 
-function askifdelete(info::AbstractString, opt_yes::AbstractString, opt_no::AbstractString)
+function ask_yes_no(info::AbstractString, opt_yes::AbstractString, opt_no::AbstractString)
     menu = RadioMenu([opt_yes, opt_no])
     println("Use the arrow keys to move the cursor. Press Enter to select. \n")
     return request(info, menu, ) == 1

@@ -32,7 +32,12 @@ end
 
 EnvInfo(name, path, pkgs::AbstractVector{<:AbstractString}, in_path) = EnvInfo(; name, path, pkgs = Set(pkgs), in_path)
 EnvInfo(name::AbstractString) = getenvinfo(name)
-Base.:(==)(a::EnvInfo, b::EnvInfo) = a.name == b.name
+Base.hash(e::EnvInfo, h::UInt) = hash((e.name, e.path, e.pkgs, e.in_path, e.standard_env, e.shared, e.temporary, e.active_project), h)
+
+Base.:(==)(a::EnvInfo, b::EnvInfo) = hash(a) == hash(b) && 
+    (a.name, a.path, a.pkgs, a.in_path, a.standard_env, a.shared, a.temporary, a.active_project) ==
+        (b.name, b.path, b.pkgs, b.in_path, b.standard_env, b.shared, b.temporary, b.active_project)
+        
 Base.:copy(e::EnvInfo) = EnvInfo(e.name, e.path, copy(e.pkgs), e.in_path, e.standard_env, e.shared, e.temporary, e.active_project)
 
 """

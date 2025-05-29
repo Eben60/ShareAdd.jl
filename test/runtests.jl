@@ -19,5 +19,5 @@ include("testing_utilities.jl")
 @safetestset "info" include("tests_info.jl")
 @safetestset "reset" include("tests_reset.jl")
 @safetestset "Env Manipulations" include("tests_envs_manipulations.jl")
-
+@safetestset "various tests" include("tests_various.jl")
 cleanup_testenvs()

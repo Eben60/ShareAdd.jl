@@ -1,4 +1,3 @@
-
 is_minor_version(v1::VersionNumber, v2::VersionNumber) = 
     v1.major == v2.major && v1.minor == v2.minor
 
@@ -15,13 +14,18 @@ If `create=true`, the main environment folder will be created if it does not exi
 """
 function env_folders(; depot = first(DEPOT_PATH), create=false)
     envs_folder = joinpath(depot, "environments")
-    main_env = joinpath(envs_folder, "v$(VERSION.major).$(VERSION.minor)")
+    main_env = joinpath(envs_folder, main_env_name())
     envs_exist = isdir(main_env)
     if create && !envs_exist 
         mkpath(main_env)
         envs_exist = isdir(main_env)
     end
     return (; envs_folder, main_env, envs_exist)
+end
+
+function main_env_name(prefixed=false)
+    prefx = prefixed ? "@" : ""
+    return "$(prefx)v$(VERSION.major).$(VERSION.minor)"
 end
 
 """
@@ -138,63 +142,6 @@ function is_shared_environment(env_name::AbstractString, depot = first(DEPOT_PAT
     startswith(env_name, "@") || error("Environment name must start with @")
     return env_path(env_name, depot) |> isdir
 end 
-
-"""
-    sh_add(env_name::AbstractString; depot = first(DEPOT_PATH)) -> Vector{String}
-    sh_add(env_names::AbstractVector{<:AbstractString}; depot = first(DEPOT_PATH)) -> Vector{String}
-    sh_add(env_name::AbstractString, ARGS...; depot = first(DEPOT_PATH)) -> Vector{String}
-
-Adds shared environment(s) to `LOAD_PATH`, making the corresponding packages all available in the current session.
-
-Returns the list of all packages in the added environments as a `Vector{String}`.
-
-# Examples
-```julia-repl
-julia> using ShareAdd: sh_add
-julia> sh_add("@StatPackages")
-3-element Vector{String}:
- "Arrow"
- "CSV"
- "DataFrames"
-
-julia> sh_add(["@StatPackages", "@Makie"])
-4-element Vector{String}:
- "Arrow"
- "CSV"
- "DataFrames"
- "Makie"
-
-julia> sh_add("@StatPackages", "@Makie")
-4-element Vector{String}:
- "Arrow"
- "CSV"
- "DataFrames"
- "Makie"
-```
-
-This function is public, not exported.
-"""
-function sh_add(env_name::AbstractString; depot = first(DEPOT_PATH))
-    is_shared_environment(env_name, depot) || error("Environment $env_name is not a shared environment")
-    env_name in LOAD_PATH || push!(LOAD_PATH, env_name)
-    return shared_packages(env_name; depot)
-end
-
-function sh_add(env_names; depot = first(DEPOT_PATH))
-    pks = String[]
-    for env_name in env_names
-        append!(pks, sh_add(env_name; depot))
-    end
-    return pks |> unique! |> sort
-end
-
-function sh_add(envs::EnvSet)
-    shared_envs = ["@$s" for s in envs.envs]
-    sh_add(shared_envs)
-end
-
-sh_add(env_name::AbstractString, ARGS...; depot = first(DEPOT_PATH)) = sh_add(vcat(env_name, ARGS...); depot)
-
 
 function list_env_pkgs(env_path) 
     fl = joinpath(env_path, "Project.toml")
@@ -327,65 +274,6 @@ function is_in_registries(pkg_name)
     return false
 end
 
-"""
-    make_importable(pkg::AbstractString)
-    make_importable(pkgs::AbstractVector{<:AbstractString})
-    make_importable(pkg1, pkg2, ...)
-    make_importable(::Nothing) => :success
-
-Checks  packages (by name only, UUIDs not supported!), prompts to install packages which are not in any shared environment, 
-and adds relevant shared environments to `LOAD_PATH`.
-
-`make_importable` is used internally by `@usingany`, but it can be used separately e.g. 
-if you e.g. want to import a package via `import` statement instead of `using`.
-
-Returns `:success` if the operation was successful, and `nothing` if the user selected "Quit. Do Nothing." on any of the prompts.
-
-Throws an error on unavailable packages.
-
-# Examples
-```julia-repl
-julia> using ShareAdd
-julia> make_importable("Foo")
-:success
-julia> import Foo 
-
-julia> using ShareAdd
-julia> make_importable("Foo")
-:success
-julia> using Foo: bazaar as baz  # @usingany Foo: bazaar as baz is not a supported syntax
-```
-
-This function is public, not exported.
-"""
-function make_importable(packages)
-
-    package_loaded(packages) && return :success
-
-    (; inshared_pkgs, installable_pkgs, unavailable_pkgs, shared_pkgs, current_pr) = check_packages(packages)
-    isempty(unavailable_pkgs) || error("The following packages are not available from any registry: $unavailable_pkgs")
-
-    if !isempty(installable_pkgs) 
-        p2i = prompt2install(installable_pkgs, )
-
-        isnothing(p2i) && return nothing
-
-        install_shared(p2i, current_pr) 
-
-        (; inshared_pkgs, installable_pkgs, unavailable_pkgs, shared_pkgs, current_pr) = check_packages(packages)
-        isempty(unavailable_pkgs) || error("The following packages are not available from any registry: $unavailable_pkgs")
-        isempty(installable_pkgs) || error("The following packages should have been installed by now: $installable_pkgs")
-    end
-
-    if ! isempty(inshared_pkgs) 
-        pkinfos = [shared_pkgs[p] for p in inshared_pkgs]
-        envs2add = optim_set(pkinfos)
-        sh_add(envs2add)
-    end
-
-    return :success
-end
-
 function package_loaded(p)
     p_sym = Symbol(p)
     return (isdefined(Main, p_sym) && getproperty(Main, p_sym) isa Module)
@@ -398,129 +286,8 @@ function package_loaded(ps::Vector)
     return true
 end
 
-function make_importable(arg::AbstractString, args...)
-    [arg, args...]
-    return make_importable([arg, args...])
-end
-
-make_importable(::Nothing) = :success
-
-function install_shared(p2is::AbstractVector, current_pr)  
-    for p2i in p2is
-        install_shared(p2i)
-    end
-    Pkg.activate(current_pr.path)
-    return nothing
-end
-
-function install_shared(p2i::NamedTuple)
-    p = p2i.pkg
-    env = p2i.env
-
-    if env isa EnvInfo
-        if env.standard_env
-            env2activate = ""
-        elseif env.shared
-            env2activate = "@" * env.name
-        else
-            env2activate = env.path
-        end
-    else
-        env2activate = env
-    end
-
-    if isempty(env2activate) 
-        Pkg.activate()
-    else
-        if startswith(env2activate, "@")
-            shared = true
-            env2activate = env2activate[2:end]
-        else
-            shared = false
-        end
-        Pkg.activate(env2activate; shared)
-    end
-
-    Pkg.add(p)
-
-    return nothing
-end
-
-env_prefix(env) = (env.shared && ! env.standard_env) ? "@" : ""
-
-function env_suffix(env)
-    #TODO current, active, temporary, and all corner cases
-    env.standard_env && return " (standard Jula environment)"
-    env.active_project && return " (current active project)"
-    return ""
-end
-
-env_info2show(env) = env_prefix(env) * env.name * env_suffix(env)
-
-function prompt4newenv(new_package)
-    print("Please enter a name for the new shared environment, \nor press Enter to accept @$new_package: ")
-    answer = readline(stdin)
-    answer = strip(answer)
-    isempty(answer) && (answer = "@$new_package")
-    startswith(answer, "@") || (answer = "@" * answer)
-    return answer
-end
-
-"""
-    prompt2install(packages::AbstractVector{<:AbstractString})
-    prompt2install(package::AbstractString)
-
-Prompt user to select a shared environment to install a package or packages.
-
-For a single package, if the user selects an environment, the package will be installed there. 
-If the user selects "A new shared environment (you will be prompted for the name)", the user will be prompted to enter a name for a new environment. 
-
-For multiple packages, the function will be called on each package and the user will be prompted for each package.
-
-The function will return a vector of NamedTuples, each with field `pkg` and `env`, 
-where `pkg` is the name of the package and `env` is the environment where it should be installed.
-
-The function will return `nothing` if the user selects "Quit. Do Nothing." on any of the prompts.
-"""
-function prompt2install(packages::AbstractVector{<:AbstractString})
-    to_install = []
-    for p in packages
-        e = prompt2install(p)
-        isnothing(e) && return nothing
-        push!(to_install, (; pkg=p, env=e))
-    end
-    return to_install
-end
-
-function prompt2install(new_package::AbstractString; envs = shared_environments_envinfos().shared_envs)
-    envs isa Dict && (envs = envs |> values |> collect)
-    sort!(envs, by=x -> x.name)
-    currproj = current_env()
-    currproj.shared || push!(envs, currproj)
-
-    options = [env_info2show(env) for env in envs]
-    push!(options, "A new shared environment (you will be prompted for the name)")
-    push!(options, "Quit. Do Nothing.")
-    menu = RadioMenu(options)
-
-    println("Use the arrow keys to move the cursor. Press Enter to select.")
-    println("Please select a shared environment to install package $new_package")
-
-    menu_idx = request(menu)
-
-    if (menu_idx == length(options)) || menu_idx <= 0
-        @info "Quiting. No action taken."
-        return nothing
-    elseif menu_idx == length(options) - 1
-        return prompt4newenv(new_package)
-    else
-        return envs[menu_idx]
-    end
-end
-
-function getenvinfo(nm::AbstractString)
+function getenvinfo(nm::AbstractString) # :: EnvInfo
     startswith(nm, "@") || error("Name of shared environment must start with @")
     nm = nm[2:end]
     return shared_environments_envinfos().shared_envs[nm]
 end
-

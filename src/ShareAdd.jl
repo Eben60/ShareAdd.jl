@@ -36,11 +36,15 @@ module ShareAdd
 using TOML, Pkg
 using REPL.TerminalMenus
 
+include("AbortableTerminalMenu/AbortableTerminalMenu.jl")
+using .AbortableTerminalMenu: AbortableMultiSelectMenu
+
 const testfolder_prefix = "z2del-0nzj"
 
 include("types.jl")
 include("optimset.jl")
-include("environments.jl")
+include("env_infos.jl")
+include("envs_interactive.jl")
 include("info.jl")
 include("utils_env.jl")
 include("update_packages.jl")

@@ -1,3 +1,4 @@
+using Test
 using ShareAdd: @usingany
 
 @test_throws ArgumentError @macroexpand @usingany 

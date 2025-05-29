@@ -1,6 +1,6 @@
-module DesktopExt
+module DefaultApplicationExt
 
-using Desktop: open_file
+using DefaultApplication
 using ShareAdd
 import ShareAdd: showenv
 
@@ -11,11 +11,11 @@ function showenv(item)
     
     if isempty(item)
         if isdir(envs_folder) 
-            open_file(envs_folder)
+            DefaultApplication.open(envs_folder)
             return nothing
         else
             @warn "The environments folder doesn't exist. Opening the Julia depot folder instead."
-            open_file(dep_path)
+            DefaultApplication.open(dep_path)
         end
     end
 
@@ -26,7 +26,7 @@ function showenv(item)
     end
 
     if isdir(path)
-        open_file(path)
+        DefaultApplication.open(path)
         return nothing
     else
         (; envs) = ShareAdd.info(item; std_lib=true, disp_rslt=false, ret_rslt=true)
@@ -40,4 +40,4 @@ function showenv(item)
     return nothing
 end
 
-end # module
+end

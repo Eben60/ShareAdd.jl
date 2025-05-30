@@ -40,7 +40,7 @@ create_project(e2, [fp1, fp2, fp3])
 
 @testset "InfoExtended" begin
 
-    using ShareAdd: pkg_version, info, EnvInfo, shared_environments_envinfos, is_shared_environment
+    using ShareAdd: pkg_version, info, EnvInfo, shared_environments_envinfos, is_shared_environment, list_shared_envs
     @test pkg_version("@$(e1.name)", fp1.name) == VersionNumber(fp1.version)
     @test pkg_version("@$(e2.name)") == Dict(fp.name => VersionNumber(fp.version) for fp in [fp1, fp2, fp3])
     @test isnothing(info(; disp_rslt=false))
@@ -137,6 +137,7 @@ create_project(e2, [fp1, fp2, fp3])
     @test occursin(s8, info_upgradable)
     
     @test is_shared_environment("@$(e4.name)")
+    @test e1.name in list_shared_envs()
 
 end
 
@@ -191,5 +192,4 @@ end # "update"
         @test !isdir(e2.path)
     end
     end # @suppress
-
 end

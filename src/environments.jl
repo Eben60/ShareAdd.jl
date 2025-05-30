@@ -410,18 +410,30 @@ end
 
 make_importable(::Nothing) = :success
 
-function install_shared(p2is::AbstractVector, current_pr)  
-    for p2i in p2is
-        install_shared(p2i)
+function install_shared(p2is::AbstractVector{<:NamedTuple}, current_pr::EnvInfo)
+    d = combine4envs(p2is)
+    for (env, pkgs) in d
+        install_shared(env, pkgs)
     end
     Pkg.activate(current_pr.path)
     return nothing
 end
 
-function install_shared(p2i::NamedTuple)
-    p = p2i.pkg
-    env = p2i.env
+function combine4envs(p2is::AbstractVector{<:NamedTuple})
+    d = Dict{Any, Vector{String}}()
+    for p in p2is
+        env = p.env
+        pkg = p.pkg
+        if haskey(d, env)
+            push!(d[env], pkg)
+        else
+            d[env] = [pkg]
+        end
+    end
+    return d
+end
 
+function install_shared(env, pkgs::Vector{String})
     if env isa EnvInfo
         if env.standard_env
             env2activate = ""
@@ -446,7 +458,7 @@ function install_shared(p2i::NamedTuple)
         Pkg.activate(env2activate; shared)
     end
 
-    Pkg.add(p)
+    Pkg.add(pkgs)
 
     return nothing
 end

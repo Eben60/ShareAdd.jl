@@ -24,7 +24,10 @@ function env_folders(; depot = first(DEPOT_PATH), create=false)
     return (; envs_folder, main_env, envs_exist)
 end
 
-main_env_name() = "v$(VERSION.major).$(VERSION.minor)"
+function main_env_name(prefixed=false)
+    prefx = prefixed ? "@" : ""
+    return "$(prefx)v$(VERSION.major).$(VERSION.minor)"
+end
 
 """
     shared_environments_envinfos(; std_lib=false, depot = first(DEPOT_PATH)) -> 
@@ -532,9 +535,41 @@ function prompt2install(new_package::AbstractString, newenvs = String[]; envs = 
     end
 end
 
-function getenvinfo(nm::AbstractString)
+function getenvinfo(nm::AbstractString) # :: EnvInfo
     startswith(nm, "@") || error("Name of shared environment must start with @")
     nm = nm[2:end]
     return shared_environments_envinfos().shared_envs[nm]
 end
 
+function nothingtodo(ar)
+    if isempty(ar)
+        @info "Nothing to do"
+        return true
+    else
+        return false
+    end
+end
+
+function tidyup(nm::AbstractString = main_env_name(true))
+    return nm |> getenvinfo |> tidyup
+end
+
+function tidyup(env::EnvInfo)
+    essential_pkgs = Set(["Revise", "ShareAdd", "OhMyREPL", "BasicAutoloads"])
+    other_pkgs = setdiff(env.pkgs, essential_pkgs) |> collect |> sort!
+    nothingtodo(other_pkgs) && return nothing
+
+    @info "Use the arrow keys to move the cursor. Press Enter to select."
+    println("\n" * "Please select any packages you would like to KEEP in the environment @$(env.name)." * "\n" *
+        "All other packages will be moved into other shared environment(s) in the following dialogs." * "\n")
+
+    menu = MultiSelectMenu(other_pkgs)
+    menu_idx = request(menu) |> collect |> sort!
+
+    keeped_pkgs = other_pkgs[menu_idx]
+    moved_pkgs = setdiff(other_pkgs, keeped_pkgs)
+    nothingtodo(moved_pkgs) && return nothing
+
+    return prompt2install(moved_pkgs)
+
+end

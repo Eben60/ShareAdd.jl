@@ -130,20 +130,6 @@ function install_shared(p2is::AbstractVector{<:NamedTuple}, current_pr::EnvInfo)
     return nothing
 end
 
-function combine4envs(p2is)
-    d = Dict{Any, Vector{String}}()
-    for p in p2is
-        env = p.env
-        pkg = p.pkg
-        if haskey(d, env)
-            push!(d[env], pkg)
-        else
-            d[env] = [pkg]
-        end
-    end
-    return d
-end
-
 function install_shared(env, pkgs::Vector{String})
     if env isa EnvInfo
         if env.standard_env
@@ -172,6 +158,20 @@ function install_shared(env, pkgs::Vector{String})
     Pkg.add(pkgs)
 
     return nothing
+end
+
+function combine4envs(p2is)
+    d = Dict{Any, Vector{String}}()
+    for p in p2is
+        env = p.env
+        pkg = p.pkg
+        if haskey(d, env)
+            push!(d[env], pkg)
+        else
+            d[env] = [pkg]
+        end
+    end
+    return d
 end
 
 function env_prefix(env)
@@ -324,6 +324,24 @@ function tidyup(env::EnvInfo)
     nothingtodo(moved_pkgs) && return nothing
 
     p = prompt2install(moved_pkgs; env2exclude=env)
-    return combine4envs(p)
+    c = combine4envs(p)
 
+end
+
+function show_2be_installed(c)
+    ks = keys(c) |> collect
+    sort!(ks, by=sortinghelp)
+    d = Dict{Any, String}()
+    for k in ks
+        if k isa AbstractString
+            s = k * " (new env)"
+        elseif k.standard_env
+            s = k.name * " (default env)"
+        else
+            s = "@" * k.name
+        end
+        d[k] = s
+    end
+    longest = d |> values .|> length |> maximum
+    return [rpad(d[k], longest) * " => " * string(c[k]) for k in ks]
 end

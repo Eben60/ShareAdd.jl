@@ -567,8 +567,12 @@ function tidyup(nm::AbstractString = main_env_name(true))
 end
 
 function tidyup(env::EnvInfo)
-    essential_pkgs = Set(["Revise", "ShareAdd", "OhMyREPL", "BasicAutoloads"])
-    other_pkgs = setdiff(env.pkgs, essential_pkgs) |> collect |> sort!
+    if env.shared
+        essential_pkgs = Set(["Revise", "ShareAdd", "OhMyREPL", "BasicAutoloads"])
+        other_pkgs = setdiff(env.pkgs, essential_pkgs) |> collect |> sort!
+    else
+        other_pkgs = env.pkgs
+    end
     nothingtodo(other_pkgs) && return nothing
 
     @info "Use the arrow keys to move the cursor. Press Enter to select."

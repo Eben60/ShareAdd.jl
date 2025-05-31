@@ -130,7 +130,7 @@ function install_shared(p2is::AbstractVector{<:NamedTuple}, current_pr::EnvInfo)
     return nothing
 end
 
-function combine4envs(p2is::AbstractVector{<:NamedTuple})
+function combine4envs(p2is)
     d = Dict{Any, Vector{String}}()
     for p in p2is
         env = p.env
@@ -186,7 +186,8 @@ function env_suffix(env)
     return ""
 end
 
-env_info2show(env) = env_prefix(env) * env.name * env_suffix(env)
+env_info2show(env::EnvInfo) = env_prefix(env) * env.name * env_suffix(env)
+env_info2show(env::AbstractString) = env
 
 function prompt4newenv(new_package)
     print("Please enter a name for the new shared environment, \nor press Enter to accept @$new_package: ")
@@ -213,11 +214,11 @@ where `pkg` is the name of the package and `env` is the environment where it sho
 
 The function will return `nothing` if the user selects "Quit. Do Nothing." on any of the prompts.
 """
-function prompt2install(packages::AbstractVector{<:AbstractString})
-    to_install = []
+function prompt2install(packages::AbstractVector{<:AbstractString}; env2exclude = [])
+    to_install = NamedTuple[]
     newenvs = String[]
     for p in packages
-        e = prompt2install(p, newenvs)
+        e = prompt2install(p, newenvs; env2exclude)
         isnothing(e) && return nothing
         push!(to_install, (; pkg=p, env=e))
         (e isa AbstractString) && !(e in newenvs) && push!(newenvs, e)
@@ -225,20 +226,8 @@ function prompt2install(packages::AbstractVector{<:AbstractString})
     return to_install
 end
 
-function prompt2install(new_package::AbstractString, newenvs = String[]; envs = shared_environments_envinfos().shared_envs)
-    envs isa Dict && (envs = envs |> values |> collect)
-    envs = convert(Array{Any}, envs)
-
-    isempty(newenvs) || (newenvs = [(;standard_env=false, active_project=false, shared=true, name=lstrip(e, '@')) for e in newenvs]) # faking env
-    append!(envs, newenvs)
-    sort!(envs, by=x -> (x.standard_env, x.name |> lowercase))
-
-    currproj = current_env()
-    currproj.shared || push!(envs, currproj)
-
-    options = [env_info2show(env) for env in envs]
-    pushfirst!(options, "A new shared environment (you will be prompted for the name)")
-    push!(options, "Quit. Do Nothing.")
+function prompt2install(new_package::AbstractString, newenvs = String[]; envs = shared_environments_envinfos().shared_envs, env2exclude = [])
+    (; options, envs) = prompt2install_preproc(new_package, newenvs, envs, env2exclude)
     menu = RadioMenu(options)
 
     @info "Use the arrow keys to move the cursor. Press Enter to select."
@@ -250,12 +239,53 @@ function prompt2install(new_package::AbstractString, newenvs = String[]; envs = 
         @info "Quiting. No action taken."
         return nothing
     elseif menu_idx == 1
-        return prompt4newenv(new_package)
+        p = prompt4newenv(new_package)
+        # @show p
+        return p
     else
         e = envs[menu_idx-1]
-        e isa EnvInfo && return e
-        return "@" * e.name
+        # @show e
+        return e
+
+        # e isa EnvInfo && return e
+        # return "@" * e.name
     end
+end
+
+prompt2install_preproc(new_package, newenvs, envs, env2exclude) = prompt2install_preproc(new_package, newenvs, envs, [env2exclude])
+
+function prompt2install_preproc(new_package, newenvs, envs, env2exclude::AbstractVector)
+    for env in env2exclude
+        if hasproperty(env, :name)
+            ename = env.name
+        elseif startswith(env, "@")
+            ename = env[2:end]
+        else
+            ename = env
+        end
+        delete!(envs, ename)
+    end
+
+    envs = envs |> values |> collect
+    envs = convert(Array{Any}, envs)
+
+    # isempty(newenvs) || (newenvs = [(;standard_env=false, active_project=false, shared=true, name=lstrip(e, '@')) for e in newenvs]) # faking env
+    append!(envs, newenvs)
+    sort!(envs, by=sortinghelp)
+
+    currproj = current_env()
+    currproj.shared || push!(envs, currproj)
+
+    options = [env_info2show(env) for env in envs]
+    pushfirst!(options, "A new shared environment (you will be prompted for the name)")
+    push!(options, "Quit. Do Nothing.")
+    return (; options, envs)
+end
+
+function sortinghelp(x)
+    x isa EnvInfo && return (x.standard_env, x.name |> lowercase)
+    startswith(x, "@") && return (false, x[2:end] |> lowercase)
+    error("If $x is a shared env name, it must start with @")
 end
 
 function nothingtodo(ar)
@@ -285,12 +315,15 @@ function tidyup(env::EnvInfo)
         "All other packages will be moved into other shared environment(s) in the following dialogs." * "\n")
 
     menu = MultiSelectMenu(other_pkgs)
-    menu_idx = request(menu) |> collect |> sort!
+    rqm = request(menu)
+    menu_idx = rqm |> collect |> sort!
+    # @show menu_idx
 
     keeped_pkgs = other_pkgs[menu_idx]
     moved_pkgs = setdiff(other_pkgs, keeped_pkgs)
     nothingtodo(moved_pkgs) && return nothing
 
-    return prompt2install(moved_pkgs)
+    p = prompt2install(moved_pkgs; env2exclude=env)
+    return combine4envs(p)
 
 end

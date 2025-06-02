@@ -271,7 +271,7 @@ function prompt2install_preproc(new_package, newenvs, envs, env2exclude::Abstrac
 
     # isempty(newenvs) || (newenvs = [(;standard_env=false, active_project=false, shared=true, name=lstrip(e, '@')) for e in newenvs]) # faking env
     append!(envs, newenvs)
-    sort!(envs, by=sortinghelp)
+    sort!(envs, by=sortinghelp1)
 
     currproj = current_env()
     currproj.shared || push!(envs, currproj)
@@ -282,7 +282,7 @@ function prompt2install_preproc(new_package, newenvs, envs, env2exclude::Abstrac
     return (; options, envs)
 end
 
-function sortinghelp(x)
+function sortinghelp1(x)
     x isa EnvInfo && return (x.standard_env, x.name |> lowercase)
     startswith(x, "@") && return (false, x[2:end] |> lowercase)
     error("If $x is a shared env name, it must start with @")
@@ -314,8 +314,13 @@ function tidyup(env::EnvInfo)
     println("\n" * "Please select any packages you would like to KEEP in the environment @$(env.name)." * "\n" *
         "All other packages will be moved into other shared environment(s) in the following dialogs." * "\n")
 
-    menu = MultiSelectMenu(other_pkgs)
+    menu = AbortableMultiSelectMenu(other_pkgs)
     rqm = request(menu)
+    if 0 in rqm
+        println("Cancelled - exiting")
+        return nothing
+    end
+    
     menu_idx = rqm |> collect |> sort!
     # @show menu_idx
 
@@ -330,18 +335,22 @@ end
 
 function show_2be_installed(c)
     ks = keys(c) |> collect
-    sort!(ks, by=sortinghelp)
+    sort!(ks, by=sortinghelp2)
     d = Dict{Any, String}()
     for k in ks
         if k isa AbstractString
             s = k * " (new env)"
-        elseif k.standard_env
-            s = k.name * " (default env)"
         else
-            s = "@" * k.name
+            s = env_info2show(k)
         end
         d[k] = s
     end
     longest = d |> values .|> length |> maximum
-    return [rpad(d[k], longest) * " => " * string(c[k]) for k in ks]
+    return [rpad(d[k], longest) * " => " * "[$(join(c[k], ", "))]" for k in ks]
+end
+
+function sortinghelp2(x)
+    x isa EnvInfo && return (true, x.active_project, x.standard_env, x.name |> lowercase)
+    startswith(x, "@") && return (false, false, false, x[2:end] |> lowercase) # newly created envs go first
+    error("If $x is a shared env name, it must start with @")
 end

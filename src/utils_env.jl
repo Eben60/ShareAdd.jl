@@ -171,13 +171,25 @@ function delete_shared_pkg(pkname::AbstractString; inall::SkipAskForceEnum, forc
     return (; success=false, now_empty=missing)
 end
 
-function delete_shared_pkg(p::Pair{EnvInfo, <:AbstractString}; force #= kwarg ignored =#)
-    e, pkname = p
+delete_shared_pkg(p::Pair{EnvInfo, <:AbstractString}; force #= kwarg ignored =#) =
+    delete_shared_pkg(p.first => [p.second]; force)
+
+
+function delete_shared_pkg(p::Pair{EnvInfo, <:AbstractVector{<:AbstractString}}; force #= kwarg ignored =#) 
+    e, pknames = p
+    all_pknames = copy(pknames)
+    for pkn in all_pknames
+        if !(pkn in e.pkgs)
+            @warn "$pkn was not installed in $(e.name). Ignoring."
+            filter!(x -> x != pkn, pknames)
+        end
+    end
+
     now_empty = false
     
-    (length(e.pkgs) == 1) && !e.standard_env && (now_empty = true)
+    now_empty = (length(e.pkgs) == length(pknames)) && !e.standard_env
     Pkg.activate(e.path)
-    Pkg.rm(pkname)
+    Pkg.rm(pknames)
 
     return (; success=true, now_empty)
 end

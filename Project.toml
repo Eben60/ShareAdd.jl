@@ -4,6 +4,7 @@ authors = ["Eben60"]
 version = "2.3.0"
 
 [deps]
+AbortableTerminalMenu = "e793e0fa-3e97-48b3-86ee-231cf22fe7ee"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
 REPL = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
@@ -16,10 +17,13 @@ DefaultApplication = "3f0dd361-4fe0-5fc6-8523-80b14ec94d85"
 DefaultApplicationExt = "DefaultApplication"
 
 [compat]
+AbortableTerminalMenu = "0.1.0"
 DefaultApplication = "1.1.0"
-# Desktop = "0.1.1"
 Pkg = "<0.0.1, 1"
 PrecompileTools = "1.2.1"
 REPL = "<0.0.1, 1"
 TOML = "<0.0.1, 1"
 julia = "1.10"
+
+[sources]
+AbortableTerminalMenu = {url = "https://github.com/Eben60/AbortableTerminalMenu.jl"}

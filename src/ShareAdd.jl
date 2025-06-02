@@ -34,7 +34,7 @@ $(isnothing(get(ENV, "CI", nothing)) ? ("\n" * "Package local path: " * pathof(S
 """
 module ShareAdd
 using TOML, Pkg
-using REPL.TerminalMenus
+using REPL.TerminalMenus, AbortableTerminalMenu
 
 const testfolder_prefix = "z2del-0nzj"
 

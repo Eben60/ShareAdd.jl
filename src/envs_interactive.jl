@@ -302,13 +302,23 @@ function tidyup(nm::AbstractString = main_env_name(true))
 end
 
 function tidyup(env::EnvInfo)
-    if env.shared
+    if env.standard_env
         essential_pkgs = Set(["Revise", "ShareAdd", "OhMyREPL", "BasicAutoloads"])
-        other_pkgs = setdiff(env.pkgs, essential_pkgs) |> collect |> sort!
+        other_pkgs = setdiff(env.pkgs, essential_pkgs)
     else
         other_pkgs = env.pkgs
     end
     nothingtodo(other_pkgs) && return nothing
+    other_pkgs = other_pkgs |> collect |> sort!
+
+    other_envs = shared_environments_envinfos(; std_lib=true).shared_envs
+    delete!(other_envs, env.name)
+
+    pkg_in_mult_envs = String[]
+    envs = other_envs |> values |> collect
+    for pk in other_pkgs
+        any([pk in e.pkgs for e in envs]) && push!(pkg_in_mult_envs, pk)
+    end
 
     @info "Use the arrow keys to move the cursor. Press Enter to select."
     println("\n" * "Please select any packages you would like to KEEP in the environment @$(env.name)." * "\n" *
@@ -317,36 +327,79 @@ function tidyup(env::EnvInfo)
     menu = AbortableMultiSelectMenu(other_pkgs)
     rqm = request(menu)
     if 0 in rqm
-        println("Cancelled - exiting")
+        println("Cancelled - exiting program.")
         return nothing
     end
-    
+
     menu_idx = rqm |> collect |> sort!
     # @show menu_idx
 
-    keeped_pkgs = other_pkgs[menu_idx]
-    moved_pkgs = setdiff(other_pkgs, keeped_pkgs)
-    nothingtodo(moved_pkgs) && return nothing
+    pkgs2keep = other_pkgs[menu_idx]
+    removed_pkgs = setdiff(other_pkgs, pkgs2keep)
+    nothingtodo(removed_pkgs) && return nothing
 
-    p = prompt2install(moved_pkgs; env2exclude=env)
-    c = combine4envs(p)
+    kept_pkgs = setdiff(env.pkgs, removed_pkgs) |> collect |> sort!
 
+    moved_pkgs = setdiff(removed_pkgs, pkg_in_mult_envs)
+    removed_pkgs_in_multienv = intersect(pkg_in_mult_envs, removed_pkgs)
+
+    @info "These packages will be removed from $(env.name): $(removed_pkgs)."
+    if isempty(kept_pkgs)
+        @info "As no packages are kept, the environment $(env.name) will be deleted."
+    else
+        @info "Following packages are staying in the environment $(env.name) : $(kept_pkgs)."
+    end
+
+    isempty(removed_pkgs_in_multienv) || 
+        @info "Following packages will be removed from $(env.name), but they are still available from other shared environments: $(removed_pkgs_in_multienv)."
+
+    if !isempty(moved_pkgs)
+        @info "Following packages will be moved to other shared environments: $(moved_pkgs)."
+        cont_prompt = "Continue? You will now be asked to select env for each package."
+    else
+        cont_prompt = "Continue?"
+    end
+    
+    ask_yes_no(cont_prompt, "Yes, go on.", "No, cancelling now.") ||
+        (@info "Cancelled - exiting program." ; return nothing)
+
+    if !isempty(moved_pkgs)
+        p = prompt2install(moved_pkgs; env2exclude=env)
+        isnothing(p) && (@info "Cancelled - exiting program." ; return nothing)
+        
+        c = combine4envs(p)
+        s2bi = show_2be_installed(c)
+        println()
+        @info "Following packages will be moved to those environments:"
+        println()
+        foreach(x -> println(x), s2bi)
+        println()
+        ask_yes_no("Continue?", "Yes, go on.", "No, cancelling now.") ||
+            (@info "Cancelled - exiting program." ; return nothing)
+    end
+
+    isempty(removed_pkgs) || delete_shared_pkg(env => removed_pkgs; force=true)
+    isempty(moved_pkgs) || install_shared(p, env)
 end
 
 function show_2be_installed(c)
     ks = keys(c) |> collect
     sort!(ks, by=sortinghelp2)
-    d = Dict{Any, String}()
+    env_d = Dict{Any, String}()
     for k in ks
         if k isa AbstractString
             s = k * " (new env)"
         else
             s = env_info2show(k)
         end
-        d[k] = s
+        env_d[k] = s
     end
-    longest = d |> values .|> length |> maximum
-    return [rpad(d[k], longest) * " => " * "[$(join(c[k], ", "))]" for k in ks]
+
+    pkgs1_d = Dict([k => ("[" * join(c[k], ", ") * "]") for k in ks])
+    longest = pkgs1_d |> values .|> string .|> length |> maximum
+    pkgs2_d = Dict(k => rpad(v, longest) for (k, v) in pkgs1_d)
+
+    return [(pkgs2_d[k] * " => " *  env_d[k]) for k in ks]
 end
 
 function sortinghelp2(x)

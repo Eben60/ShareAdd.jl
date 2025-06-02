@@ -240,15 +240,10 @@ function prompt2install(new_package::AbstractString, newenvs = String[]; envs = 
         return nothing
     elseif menu_idx == 1
         p = prompt4newenv(new_package)
-        # @show p
         return p
     else
         e = envs[menu_idx-1]
-        # @show e
         return e
-
-        # e isa EnvInfo && return e
-        # return "@" * e.name
     end
 end
 
@@ -301,7 +296,7 @@ function tidyup(nm::AbstractString = main_env_name(true))
     return nm |> getenvinfo |> tidyup
 end
 
-function tidyup(env::EnvInfo)
+function tidyup_preproc(env::EnvInfo)
     if env.standard_env
         essential_pkgs = Set(["Revise", "ShareAdd", "OhMyREPL", "BasicAutoloads"])
         other_pkgs = setdiff(env.pkgs, essential_pkgs)
@@ -309,9 +304,11 @@ function tidyup(env::EnvInfo)
         other_pkgs = env.pkgs
     end
     nothingtodo(other_pkgs) && return nothing
-    other_pkgs = other_pkgs |> collect |> sort!
 
+    other_pkgs = other_pkgs |> collect |> sort!
     other_envs = shared_environments_envinfos(; std_lib=true).shared_envs
+    current_pr = current_env()
+
     delete!(other_envs, env.name)
 
     pkg_in_mult_envs = String[]
@@ -319,6 +316,13 @@ function tidyup(env::EnvInfo)
     for pk in other_pkgs
         any([pk in e.pkgs for e in envs]) && push!(pkg_in_mult_envs, pk)
     end
+    return (; other_pkgs, current_pr, pkg_in_mult_envs)
+end
+
+function tidyup(env::EnvInfo)
+    tp = tidyup_preproc(env::EnvInfo)
+    isnothing(tp) && return nothing
+    (; other_pkgs, current_pr, pkg_in_mult_envs) = tp
 
     @info "Use the arrow keys to move the cursor. Press Enter to select."
     println("\n" * "Please select any packages you would like to KEEP in the environment @$(env.name)." * "\n" *
@@ -332,14 +336,12 @@ function tidyup(env::EnvInfo)
     end
 
     menu_idx = rqm |> collect |> sort!
-    # @show menu_idx
 
     pkgs2keep = other_pkgs[menu_idx]
     removed_pkgs = setdiff(other_pkgs, pkgs2keep)
     nothingtodo(removed_pkgs) && return nothing
 
     kept_pkgs = setdiff(env.pkgs, removed_pkgs) |> collect |> sort!
-
     moved_pkgs = setdiff(removed_pkgs, pkg_in_mult_envs)
     removed_pkgs_in_multienv = intersect(pkg_in_mult_envs, removed_pkgs)
 
@@ -379,7 +381,12 @@ function tidyup(env::EnvInfo)
     end
 
     isempty(removed_pkgs) || delete_shared_pkg(env => removed_pkgs; force=true)
-    isempty(moved_pkgs) || install_shared(p, env)
+    if !isempty(moved_pkgs) 
+        install_shared(p, current_pr)
+    else
+        Pkg.activate(current_pr.path)
+    end
+
 end
 
 function show_2be_installed(c)

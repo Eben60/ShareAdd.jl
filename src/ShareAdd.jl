@@ -29,15 +29,17 @@ julia> plot(xs, ys)
 
 Reference: see docstrings.
 
+The package name can be pronounced like "shair-ed".
+
 Documentation: https://eben60.github.io/ShareAdd.jl/
 $(isnothing(get(ENV, "CI", nothing)) ? ("\n" * "Package local path: " * pathof(ShareAdd)) : "")
 """
 module ShareAdd
 using TOML, Pkg
-using REPL.TerminalMenus
+using REPL.TerminalMenus: RadioMenu
 
 include("AbortableTerminalMenu/AbortableTerminalMenu.jl")
-using .AbortableTerminalMenu: AbortableMultiSelectMenu
+using .AbortableTerminalMenu: AbortableMultiSelectMenu, request
 
 const testfolder_prefix = "z2del-0nzj"
 

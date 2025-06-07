@@ -10,6 +10,7 @@ Prints out and/or returns information about shared environments.
 # Keyword arguments
 - `by_env=true`: whether to print out results as a `Dict` of pairs like `@env => [pkg1, ...]`, or `pkg => [@env1, ...]`. Has no effect on returned (if any) results.
 - `listing=nothing`: this kwarg can be `nothing`, `:envs`, or `:pkgs`. If one of these two `Symbol`s is provided, the result is printed as a vector of envs or pkgs, resp. In this case `by_env` is ignored. Has no effect on returned (if any) results
+- `std_lib=false`: if true, info on standard library also returned.
 - `upgradable=false`: if true, all other kwargs will be ignored, and only upgradable packages with installed vs. most recent versions will be printed, ordered by environment. 
 - `disp_rslt=true`: whether to print out results.
 - `ret_rslt=false`: whether the function returns anything. If set to `true`, it returns a NamedTuple `(; env_dict, pkg_dict, envs, pkgs, absent)`, where the two first elements are  `Dict`s with keywords correspondingly by env or by pkg; `envs` and `pkgs` are vectors of  respective elements, and `absent` are those names provided through the `nms` argument, which  are not contained in the shared envs. Names of envs in the returned data are without leading "@".

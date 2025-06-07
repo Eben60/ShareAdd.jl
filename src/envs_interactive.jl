@@ -71,6 +71,10 @@ Returns `:success` if the operation was successful, and `nothing` if the user se
 
 Throws an error on unavailable packages.
 
+> **⚠️ Note for Julia v1.12 in VSCode**  
+>
+> `make_importable` may need to install new packages, with dialogs implemented via `REPL.TerminalMenus`, which appear to be broken with Julia **v1.12** in **VSCode**. A warning will be issued before a call to `REPL.TerminalMenus` dialog, giving the user the possibility to abort. See package docs for more info and workarounds.
+
 # Examples
 ```julia-repl
 julia> using ShareAdd
@@ -292,10 +296,6 @@ function nothingtodo(ar)
     end
 end
 
-function tidyup(nm::AbstractString = main_env_name(true))
-    return nm |> getenvinfo |> tidyup
-end
-
 function tidyup_preproc(env::EnvInfo)
     if env.standard_env
         essential_pkgs = Set(["Revise", "ShareAdd", "OhMyREPL", "BasicAutoloads"])
@@ -319,6 +319,35 @@ function tidyup_preproc(env::EnvInfo)
     return (; other_pkgs, current_pr, pkg_in_mult_envs)
 end
 
+function tidyup_sortout_pkgs(env, rqm, other_pkgs, pkg_in_mult_envs)
+    menu_idx = rqm |> collect |> sort!
+    pkgs2keep = other_pkgs[menu_idx]
+    removed_pkgs = setdiff(other_pkgs, pkgs2keep)
+    nothingtodo(removed_pkgs) && return nothing
+
+    kept_pkgs = setdiff(env.pkgs, removed_pkgs) |> collect |> sort!
+    moved_pkgs = setdiff(removed_pkgs, pkg_in_mult_envs)
+    removed_pkgs_in_multienv = intersect(pkg_in_mult_envs, removed_pkgs)
+    return (; removed_pkgs, kept_pkgs, moved_pkgs, removed_pkgs_in_multienv)
+end
+
+"""
+    tidyup()
+    tidyup(env::AbstractString)
+    tidyup(env::EnvInfo)
+
+`Tidyup` helps users to move packages out of a crowded shared environment. 
+When called without arguments, it applies to the main shared environment. 
+It opens a series of dialogs, prompting the user to select which packages to move out and where to move them.
+
+> **⚠️ Note for Julia v1.12 in VSCode**  
+>
+> `tidyup` relies on dialogs implemented via `REPL.TerminalMenus`, which appear to be broken with Julia **v1.12** in **VSCode**. A warning will be issued before a call to `REPL.TerminalMenus` dialog, giving the user the possibility to abort. See package docs for more info and workarounds.
+"""
+function tidyup(nm::AbstractString = main_env_name(true))
+    return nm |> getenvinfo |> tidyup
+end
+
 function tidyup(env::EnvInfo)
     tp = tidyup_preproc(env::EnvInfo)
     isnothing(tp) && return nothing
@@ -335,15 +364,9 @@ function tidyup(env::EnvInfo)
         return nothing
     end
 
-    menu_idx = rqm |> collect |> sort!
-
-    pkgs2keep = other_pkgs[menu_idx]
-    removed_pkgs = setdiff(other_pkgs, pkgs2keep)
-    nothingtodo(removed_pkgs) && return nothing
-
-    kept_pkgs = setdiff(env.pkgs, removed_pkgs) |> collect |> sort!
-    moved_pkgs = setdiff(removed_pkgs, pkg_in_mult_envs)
-    removed_pkgs_in_multienv = intersect(pkg_in_mult_envs, removed_pkgs)
+    tsp = tidyup_sortout_pkgs(env, rqm, other_pkgs, pkg_in_mult_envs)
+    isnothing(tsp) && return nothing
+    (; removed_pkgs, kept_pkgs, moved_pkgs, removed_pkgs_in_multienv) = tsp
 
     @info "These packages will be removed from $(env.name): $(removed_pkgs)."
     if isempty(kept_pkgs)

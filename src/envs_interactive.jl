@@ -348,8 +348,6 @@ function tidyup(env::EnvInfo)
         return nothing
     end
 
-    return (; env, rqm, other_pkgs, pkg_in_mult_envs)
-
     tsp = tidyup_sortout_pkgs(env, rqm, other_pkgs, pkg_in_mult_envs)
     isnothing(tsp) && return nothing
     (; removed_pkgs, kept_pkgs, moved_pkgs, removed_pkgs_in_multienv) = tsp

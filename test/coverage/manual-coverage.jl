@@ -1,6 +1,7 @@
-@usingany Pkg, Coverage
+@usingany Pkg
 Pkg.test("ShareAdd"; coverage=true)
 
+@usingany Coverage
 srcfolder = normpath(@__DIR__, "../../src")
 coverage = process_folder(srcfolder)
 

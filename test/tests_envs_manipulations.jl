@@ -40,7 +40,7 @@ create_project(e2, [fp1, fp2, fp3])
 
 @testset "InfoExtended" begin
 
-    using ShareAdd: pkg_version, info, EnvInfo, shared_environments_envinfos, is_shared_environment, list_shared_envs
+    using ShareAdd: pkg_version, info, shared_environments_envinfos, is_shared_environment, list_shared_envs
     @test pkg_version("@$(e1.name)", fp1.name) == VersionNumber(fp1.version)
     @test pkg_version("@$(e2.name)") == Dict(fp.name => VersionNumber(fp.version) for fp in [fp1, fp2, fp3])
     @test isnothing(info(; disp_rslt=false))
@@ -142,7 +142,8 @@ create_project(e2, [fp1, fp2, fp3])
 end
 
 @testset "EnvInfo" begin
-    using ShareAdd: EnvInfo
+    using ShareAdd: EnvInfo, sortinghelp1, sortinghelp2, env_info2show, combine4envs, show_2be_installed, tidyup_preproc, tidyup_sortout_pkgs
+    ei1 = EnvInfo("@" * e1.name)
     ei2 = EnvInfo("@" * e2.name)
     @test ei2.pkgs == Set([fp1.name, fp2.name, fp3.name])
 
@@ -152,9 +153,67 @@ end
     @test ei2.temporary == false
     @test ei2.active_project == false
 
-    ei2empty = EnvInfo(; name = ei2.name)
-    @test ei2empty == ei2
+    ei2a = copy(ei2)
+    ei2a.pkgs = Set([fp1.name, fp2.name, fp3.name])
+    @test ei2a == ei2
+    
+    @test env_info2show(ei2) == "@$(e2.name)"
+    @test env_info2show("@" * "e2.name") == "@" * "e2.name"
 
+    @test sortinghelp1(ei2) == (false, e2.name)
+    @test sortinghelp1("@foo") == (false, "foo")
+    @test_throws ErrorException sortinghelp1("foo")
+
+    @test sortinghelp2(ei2) == (true, false, false,  e2.name)
+    @test sortinghelp2("@foo") == (false, false, false, "foo")
+    @test_throws ErrorException sortinghelp2("foo")
+
+    p = [
+        (pkg = "Foo", env = "@FOO"),
+        (pkg = "Bar", env = "@FOO"),
+        (pkg = "Fakeproj1", env = "@FOO"),          
+        (pkg = "Fakeproj2", env = ei1),
+        (pkg = "Fakeproj3", env = ei1),
+    ]
+    
+    c = combine4envs(p) 
+    @test c ==  Dict(
+        ei1 => ["Fakeproj2", "Fakeproj3"], 
+        "@FOO" => ["Foo", "Bar", "Fakeproj1"],
+        )
+    
+    s2b = show_2be_installed(c)
+    @test startswith(s2b[1], "[Foo, Bar, Fakeproj1] ") 
+    @test startswith(s2b[2], "[Fakeproj2, Fakeproj3] ") 
+    @test endswith(s2b[1], " => @FOO (new env)")
+    @test endswith(s2b[2], " => @$(ei1.name)")
+    t = tidyup_preproc(ei2)
+
+    @test t.other_pkgs == ["Fakeproj1", "Fakeproj2", "Fakeproj3"]
+    @test "Fakeproj1" in t.pkg_in_mult_envs
+    @test "SafeTestsets" in t.current_pr.pkgs
+
+    env = ei2
+    rqm = Set([2])
+    other_pkgs = ["Fakeproj1", "Fakeproj2", "Fakeproj3"]
+    pkg_in_mult_envs = ["Fakeproj1"]
+    tsp = tidyup_sortout_pkgs(env, rqm, other_pkgs, pkg_in_mult_envs)
+    @test tsp == (;removed_pkgs = ["Fakeproj1", "Fakeproj3"], 
+                    kept_pkgs = ["Fakeproj2"], 
+                    moved_pkgs = ["Fakeproj3"],
+                    removed_pkgs_in_multienv = ["Fakeproj1"])
+end
+
+@testset "sh_add" begin
+    using ShareAdd: EnvSet, sh_add
+    lp = LOAD_PATH
+    eset = EnvSet(Set([e1.name, e2.name]), Set(), 0,0)
+    sh_add(eset)
+
+    @test "@$(e1.name)" in LOAD_PATH
+    @test "@$(e2.name)" in LOAD_PATH
+    
+    filter!(x -> x in lp, LOAD_PATH) # restoring LOAD_PATH
 end
 
 @testset "update" begin
@@ -192,4 +251,18 @@ end # "update"
         @test !isdir(e2.path)
     end
     end # @suppress
+end
+
+@testset "temporary_env" begin
+    using ShareAdd
+    using ShareAdd: current_env, is_temporary_env, env_folders, activate_temp
+    @suppress begin
+    currentpath = current_env().path
+    (; main_env) = env_folders()
+    Pkg.activate(main_env)
+    @test ! is_temporary_env()    
+    activate_temp()
+    @test is_temporary_env()
+    Pkg.activate(currentpath)
+    end # suppress
 end

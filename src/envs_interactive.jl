@@ -319,6 +319,19 @@ function tidyup_preproc(env::EnvInfo)
     return (; other_pkgs, current_pr, pkg_in_mult_envs)
 end
 
+function tidyup_sortout_pkgs(env, rqm, other_pkgs, pkg_in_mult_envs)
+    menu_idx = rqm |> collect |> sort!
+    pkgs2keep = other_pkgs[menu_idx]
+    removed_pkgs = setdiff(other_pkgs, pkgs2keep)
+    nothingtodo(removed_pkgs) && return nothing
+
+    kept_pkgs = setdiff(env.pkgs, removed_pkgs) |> collect |> sort!
+    moved_pkgs = setdiff(removed_pkgs, pkg_in_mult_envs)
+    removed_pkgs_in_multienv = intersect(pkg_in_mult_envs, removed_pkgs)
+    return (; removed_pkgs, kept_pkgs, moved_pkgs, removed_pkgs_in_multienv)
+end
+
+
 function tidyup(env::EnvInfo)
     tp = tidyup_preproc(env::EnvInfo)
     isnothing(tp) && return nothing
@@ -335,15 +348,11 @@ function tidyup(env::EnvInfo)
         return nothing
     end
 
-    menu_idx = rqm |> collect |> sort!
+    return (; env, rqm, other_pkgs, pkg_in_mult_envs)
 
-    pkgs2keep = other_pkgs[menu_idx]
-    removed_pkgs = setdiff(other_pkgs, pkgs2keep)
-    nothingtodo(removed_pkgs) && return nothing
-
-    kept_pkgs = setdiff(env.pkgs, removed_pkgs) |> collect |> sort!
-    moved_pkgs = setdiff(removed_pkgs, pkg_in_mult_envs)
-    removed_pkgs_in_multienv = intersect(pkg_in_mult_envs, removed_pkgs)
+    tsp = tidyup_sortout_pkgs(env, rqm, other_pkgs, pkg_in_mult_envs)
+    isnothing(tsp) && return nothing
+    (; removed_pkgs, kept_pkgs, moved_pkgs, removed_pkgs_in_multienv) = tsp
 
     @info "These packages will be removed from $(env.name): $(removed_pkgs)."
     if isempty(kept_pkgs)

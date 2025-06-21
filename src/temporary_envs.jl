@@ -1,6 +1,6 @@
 function is_temporary_env()
     p = Base.active_project() |> abspath
-    temporarydir = (tempdir() |> abspath) * "/"
+    temporarydir = (tempdir() |> abspath)
     return startswith(p, temporarydir)
 end
 export is_temporary_env

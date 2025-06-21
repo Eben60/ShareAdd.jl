@@ -1,5 +1,14 @@
 ## Changelog
 
+### Release 2.3.0
+
+_2025-06-22_ 
+
+- Added [`ShareAdd.tidyup`](@ref) function for cleaning up cluttered shared environments.
+- Added docs section on [Installation and First Steps](@ref "Installation and first steps").
+- Warnings, docs and workaround tips for an [issue](@ref "Note for Julia v1.12 in VSCode"), which may occur with Julia v1.12 in VSCode.
+- Some fixes and refactoring.
+
 ### Release 2.2.0
 
 _2025-05-19_ 
@@ -39,7 +48,7 @@ _2025-01-18_
 #### Fixes
 
 - Workaround for an issue that sometimes occured when running the test suite on a CI server. 
-- Fix a bug with update() call without arguments.
+- Fix a bug with [`ShareAdd.update()`](@ref) call without arguments.
 
 ### Release 2.0.0
 
@@ -84,6 +93,6 @@ The AI from [Codeium](https://codeium.com/) helped me and bugged me (pun intende
 
 ## Copyright and License
 
-© 2024 Eben60
+© 2024, 2025 Eben60
 
 MIT License (see separate file `LICENSE`)

@@ -10,7 +10,7 @@ Options for deletion of environments and packages.
 As `ShareAdd` is intended for interactive usage, and therefore the exported bindings are available in the `Main` module,
 we use the "-ing" form to reduce the probability of name collisions.
 
-The values of this enum are exported, whereas the enum type is public but not exported. 
+The values of this `enum` are exported, whereas the `SkipAskForceEnum` type itself is public but not exported. 
 """
 @enum SkipAskForceEnum begin
     SKIPPING = -1
@@ -40,6 +40,11 @@ Both kwargs accept any integer types, including Bool, as well as enum [`SkipAskF
 
 - `inall=ASKING`: If set to `FORCING`, would delete package from multiple environments, whereas with `SKIPPING`, it will skip without asking. Has no effect if provided `nms` is/are env name(s).
 - `force=ASKING`: If set to `FORCING`, would delete the env even if the env is currently in `LOAD_PATH`, and remove a package even if it is loaded.
+
+> **⚠️ Note for Julia v1.12 in VSCode**  
+>
+> `delete`, if called with a kwarg set to `ASKING`, may start a dialog, which is implemented via `REPL.TerminalMenus`. `TerminalMenus` appear to be broken with Julia **v1.12** in **VSCode**. A warning will be issued before a call to `REPL.TerminalMenus` dialog, giving the user the possibility to abort. See package docs for more info and workarounds.
+
 
 # Examples
 ```julia-repl

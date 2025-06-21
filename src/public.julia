@@ -1,2 +1,2 @@
-public current_env, delete, info, make_current_mnf, make_importable, reset, sh_add, update, EnvInfo, PackageInfo, SkipAskForceEnum
+public current_env, delete, info, make_current_mnf, make_importable, reset, sh_add, tidyup, update, EnvInfo, PackageInfo, SkipAskForceEnum
 

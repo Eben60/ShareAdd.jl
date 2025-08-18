@@ -54,7 +54,10 @@ mutable struct PackageInfo
     envs::Vector{EnvInfo}
     in_path::Bool
     in_stdlib::Union{Bool, Missing}
+    is_registered::Union{Bool, Missing}
 end
+
+PackageInfo(name, envs, in_path, in_stdlib) = PackageInfo(name, copy(envs), in_path, in_stdlib, is_registered(name))
 
 """
     struct EnvSet

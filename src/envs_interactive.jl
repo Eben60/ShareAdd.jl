@@ -1,3 +1,14 @@
+"Packages which usually belong into the main shared environment"
+const ESSENTIAL_PKGS = Set(["Revise", "ShareAdd", "OhMyREPL", "BasicAutoloads"]) 
+
+"""
+Used to denote that package is to be deleted (like moving to an environment analog of dev/null)
+"""
+struct EnvNull
+end
+
+const ENV_NULL = EnvNull()
+
 """
     sh_add(env_name::AbstractString; depot = first(DEPOT_PATH)) -> Vector{String}
     sh_add(env_names::AbstractVector{<:AbstractString}; depot = first(DEPOT_PATH)) -> Vector{String}
@@ -128,7 +139,7 @@ make_importable(::Nothing) = :success
 function install_shared(p2is::AbstractVector{<:NamedTuple}, current_pr::EnvInfo)
     d = combine4envs(p2is)
     for (env, pkgs) in d
-        install_shared(env, pkgs)
+        env == ENV_NULL || install_shared(env, pkgs)
     end
     Pkg.activate(current_pr.path)
     return nothing
@@ -218,20 +229,24 @@ where `pkg` is the name of the package and `env` is the environment where it sho
 
 The function will return `nothing` if the user selects "Quit. Do Nothing." on any of the prompts.
 """
-function prompt2install(packages::AbstractVector{<:AbstractString}; env2exclude = [])
+function prompt2install(packages::AbstractVector{<:AbstractString}; env2exclude = [], option2del = false)
     to_install = NamedTuple[]
     newenvs = String[]
     for p in packages
-        e = prompt2install(p, newenvs; env2exclude)
+        e = prompt2install(p, newenvs; env2exclude, option2del)
         isnothing(e) && return nothing
         push!(to_install, (; pkg=p, env=e))
         (e isa AbstractString) && !(e in newenvs) && push!(newenvs, e)
     end
     return to_install
 end
+"""
+    prompt2install(new_package::AbstractString, args...; kwargs...) -> Union{Nothing, String, EnvInfo, EnvNull}
 
-function prompt2install(new_package::AbstractString, newenvs = String[]; envs = shared_environments_envinfos().shared_envs, env2exclude = [])
-    (; options, envs) = prompt2install_preproc(new_package, newenvs, envs, env2exclude)
+Will return ENV_NULL to indicate that package is not to be installed in any environment (in using by tidyup)
+"""
+function prompt2install(new_package::AbstractString, newenvs = String[]; envs = shared_environments_envinfos().shared_envs, env2exclude = [], option2del = false)
+    (; options, envs) = prompt2install_preproc(new_package, newenvs, envs, env2exclude; option2del)
     menu = RadioMenu(options)
 
     @info "Use the arrow keys to move the cursor. Press Enter to select."
@@ -242,6 +257,8 @@ function prompt2install(new_package::AbstractString, newenvs = String[]; envs = 
     if (menu_idx == length(options)) || menu_idx <= 0
         @info "Quiting. No action taken."
         return nothing
+    elseif option2del && menu_idx == length(options) - 1
+        return ENV_NULL
     elseif menu_idx == 1
         p = prompt4newenv(new_package)
         return p
@@ -251,9 +268,9 @@ function prompt2install(new_package::AbstractString, newenvs = String[]; envs = 
     end
 end
 
-prompt2install_preproc(new_package, newenvs, envs, env2exclude) = prompt2install_preproc(new_package, newenvs, envs, [env2exclude])
+prompt2install_preproc(new_package, newenvs, envs, env2exclude; option2del = false) = prompt2install_preproc(new_package, newenvs, envs, [env2exclude]; option2del)
 
-function prompt2install_preproc(new_package, newenvs, envs, env2exclude::AbstractVector)
+function prompt2install_preproc(new_package, newenvs, envs, env2exclude::AbstractVector; option2del = false)
     for env in env2exclude
         if hasproperty(env, :name)
             ename = env.name
@@ -277,6 +294,7 @@ function prompt2install_preproc(new_package, newenvs, envs, env2exclude::Abstrac
 
     options = [env_info2show(env) for env in envs]
     pushfirst!(options, "A new shared environment (you will be prompted for the name)")
+    option2del && push!(options, "None. Just Uninstall.")
     push!(options, "Quit. Do Nothing.")
     return (; options, envs)
 end
@@ -296,16 +314,29 @@ function nothingtodo(ar)
     end
 end
 
+function inform_unregistered(pkgs)
+    isempty(pkgs) && return nothing
+    pkgs = pkgs |> collect |> sort!
+    @info "The packages $pkgs are not registered and will not be processed. Move or delete them manually, if you want."
+    return nothing
+end
+
 function tidyup_preproc(env::EnvInfo)
     if env.standard_env
-        essential_pkgs = Set(["Revise", "ShareAdd", "OhMyREPL", "BasicAutoloads"])
-        other_pkgs = setdiff(env.pkgs, essential_pkgs)
+        other_pkgs = setdiff(env.pkgs, ESSENTIAL_PKGS)
     else
         other_pkgs = env.pkgs
     end
+
+    unregistered_pkgs = filter(x -> !is_registered(x), other_pkgs)
+    setdiff!(other_pkgs, unregistered_pkgs)
+
+    inform_unregistered(unregistered_pkgs)
     nothingtodo(other_pkgs) && return nothing
 
     other_pkgs = other_pkgs |> collect |> sort!
+    unregistered_pkgs = unregistered_pkgs |> collect |> sort!
+
     other_envs = shared_environments_envinfos(; std_lib=true).shared_envs
     current_pr = current_env()
 
@@ -316,7 +347,7 @@ function tidyup_preproc(env::EnvInfo)
     for pk in other_pkgs
         any([pk in e.pkgs for e in envs]) && push!(pkg_in_mult_envs, pk)
     end
-    return (; other_pkgs, current_pr, pkg_in_mult_envs)
+    return (; other_pkgs, current_pr, pkg_in_mult_envs, unregistered_pkgs)
 end
 
 function tidyup_sortout_pkgs(env, rqm, other_pkgs, pkg_in_mult_envs)
@@ -351,11 +382,12 @@ end
 function tidyup(env::EnvInfo)
     tp = tidyup_preproc(env::EnvInfo)
     isnothing(tp) && return nothing
-    (; other_pkgs, current_pr, pkg_in_mult_envs) = tp
+    (; other_pkgs, current_pr, pkg_in_mult_envs, unregistered_pkgs) = tp
 
     @info "Use the arrow keys to move the cursor. Press Enter to select."
-    println("\n" * "Please select any packages you would like to KEEP in the environment @$(env.name)." * "\n" *
-        "All other packages will be moved into other shared environment(s) in the following dialogs." * "\n")
+    println("\n" * "Please select any packages you would like to KEEP in the environment @$(env.name). " * "\n" *
+        "In the following dialogs all other packages will be either " * "\n" *
+        "moved into other shared environment(s) or removed ." * "\n")
 
     menu = AbortableMultiSelectMenu(other_pkgs)
     rqm = request(menu)
@@ -369,17 +401,18 @@ function tidyup(env::EnvInfo)
     (; removed_pkgs, kept_pkgs, moved_pkgs, removed_pkgs_in_multienv) = tsp
 
     @info "These packages will be removed from $(env.name): $(removed_pkgs)."
-    if isempty(kept_pkgs)
+    staying_pkgs = vcat(kept_pkgs, unregistered_pkgs)
+    if isempty(staying_pkgs)
         @info "As no packages are kept, the environment $(env.name) will be deleted."
     else
-        @info "Following packages are staying in the environment $(env.name) : $(kept_pkgs)."
+        @info "Following packages are staying in the environment $(env.name) : $(staying_pkgs)."
     end
 
     isempty(removed_pkgs_in_multienv) || 
         @info "Following packages will be removed from $(env.name), but they are still available from other shared environments: $(removed_pkgs_in_multienv)."
 
     if !isempty(moved_pkgs)
-        @info "Following packages will be moved to other shared environments: $(moved_pkgs)."
+        @info "Following packages will be moved to other shared environments, or just removed, at your choice: $(moved_pkgs)."
         cont_prompt = "Continue? You will now be asked to select env for each package."
     else
         cont_prompt = "Continue?"
@@ -389,16 +422,22 @@ function tidyup(env::EnvInfo)
         (@info "Cancelled - exiting program." ; return nothing)
 
     if !isempty(moved_pkgs)
-        p = prompt2install(moved_pkgs; env2exclude=env)
+        p = prompt2install(moved_pkgs; env2exclude=env, option2del=true)
         isnothing(p) && (@info "Cancelled - exiting program." ; return nothing)
-        
         c = combine4envs(p)
         s2bi = show_2be_installed(c)
         println()
-        @info "Following packages will be moved to those environments:"
-        println()
-        foreach(x -> println(x), s2bi)
-        println()
+        if ENV_NULL in keys(c)
+            @info "Following packages will be removed:"
+            println(c[ENV_NULL])
+            println()
+        end
+        if !isnothing(s2bi)
+            @info "Following packages will be moved to those environments:"
+            println()
+            foreach(x -> println(x), s2bi)
+            println()
+        end
         ask_yes_no("Continue?", "Yes, go on.", "No, cancelling now.") ||
             (@info "Cancelled - exiting program." ; return nothing)
     end
@@ -413,6 +452,9 @@ function tidyup(env::EnvInfo)
 end
 
 function show_2be_installed(c)
+    c = copy(c) # avoid mutating the argument
+    delete!(c, ENV_NULL)
+    isempty(c) && return nothing
     ks = keys(c) |> collect
     sort!(ks, by=sortinghelp2)
     env_d = Dict{Any, String}()

@@ -29,7 +29,7 @@ julia> plot(xs, ys)
 
 Reference: see docstrings.
 
-The package name can be pronounced like "shair-ed".
+The package name can be pronounced like "shair-ed", similar to word "shared".
 
 Documentation: https://eben60.github.io/ShareAdd.jl/
 $(isnothing(get(ENV, "CI", nothing)) ? ("\n" * "Package local path: " * pathof(ShareAdd)) : "")

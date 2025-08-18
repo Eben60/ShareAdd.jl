@@ -1,6 +1,6 @@
 name = "ShareAdd"
 uuid = "27c01619-3163-4fe3-a204-36d38c32eb7d"
-version = "2.3.0"
+version = "2.4.0"
 authors = ["Eben60"]
 
 [deps]

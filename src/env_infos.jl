@@ -274,6 +274,8 @@ function is_in_registries(pkg_name)
     return false
 end
 
+is_registered(name) = is_in_registries(name) || (name in stdlib_env().pkgs)
+
 function package_loaded(p)
     p_sym = Symbol(p)
     return (isdefined(Main, p_sym) && getproperty(Main, p_sym) isa Module)

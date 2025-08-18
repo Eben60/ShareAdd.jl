@@ -314,15 +314,29 @@ function nothingtodo(ar)
     end
 end
 
+function inform_unregistered(pkgs)
+    isempty(pkgs) && return nothing
+    pkgs = pkgs |> collect |> sort!
+    @info "The packages $pkgs are not registered and will not be processed. Move or delete them manually, if you want."
+    return nothing
+end
+
 function tidyup_preproc(env::EnvInfo)
     if env.standard_env
         other_pkgs = setdiff(env.pkgs, ESSENTIAL_PKGS)
     else
         other_pkgs = env.pkgs
     end
+
+    unregistered_pkgs = filter(x -> !is_registered(x), other_pkgs)
+    setdiff!(other_pkgs, unregistered_pkgs)
+
+    inform_unregistered(unregistered_pkgs)
     nothingtodo(other_pkgs) && return nothing
 
     other_pkgs = other_pkgs |> collect |> sort!
+    unregistered_pkgs = unregistered_pkgs |> collect |> sort!
+
     other_envs = shared_environments_envinfos(; std_lib=true).shared_envs
     current_pr = current_env()
 
@@ -333,7 +347,7 @@ function tidyup_preproc(env::EnvInfo)
     for pk in other_pkgs
         any([pk in e.pkgs for e in envs]) && push!(pkg_in_mult_envs, pk)
     end
-    return (; other_pkgs, current_pr, pkg_in_mult_envs)
+    return (; other_pkgs, current_pr, pkg_in_mult_envs, unregistered_pkgs)
 end
 
 function tidyup_sortout_pkgs(env, rqm, other_pkgs, pkg_in_mult_envs)
@@ -368,7 +382,7 @@ end
 function tidyup(env::EnvInfo)
     tp = tidyup_preproc(env::EnvInfo)
     isnothing(tp) && return nothing
-    (; other_pkgs, current_pr, pkg_in_mult_envs) = tp
+    (; other_pkgs, current_pr, pkg_in_mult_envs, unregistered_pkgs) = tp
 
     @info "Use the arrow keys to move the cursor. Press Enter to select."
     println("\n" * "Please select any packages you would like to KEEP in the environment @$(env.name). " * "\n" *
@@ -387,10 +401,11 @@ function tidyup(env::EnvInfo)
     (; removed_pkgs, kept_pkgs, moved_pkgs, removed_pkgs_in_multienv) = tsp
 
     @info "These packages will be removed from $(env.name): $(removed_pkgs)."
-    if isempty(kept_pkgs)
+    staying_pkgs = vcat(kept_pkgs, unregistered_pkgs)
+    if isempty(staying_pkgs)
         @info "As no packages are kept, the environment $(env.name) will be deleted."
     else
-        @info "Following packages are staying in the environment $(env.name) : $(kept_pkgs)."
+        @info "Following packages are staying in the environment $(env.name) : $(staying_pkgs)."
     end
 
     isempty(removed_pkgs_in_multienv) || 

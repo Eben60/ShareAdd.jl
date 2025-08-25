@@ -274,7 +274,7 @@ function is_in_registries(pkg_name)
     return false
 end
 
-is_registered(name) = is_in_registries(name) || (name in stdlib_env().pkgs)
+is_registered(name; is_testing=IS_TESTING[]) = (is_testing && startswith(name, "Fakeproj")) || is_in_registries(name) || (name in stdlib_env().pkgs)
 
 function package_loaded(p)
     p_sym = Symbol(p)

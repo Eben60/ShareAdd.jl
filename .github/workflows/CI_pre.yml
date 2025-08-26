@@ -14,15 +14,15 @@ jobs:
       fail-fast: false 
       matrix:
         include:
-          # - version: 'pre'
-          #   os: macOS-latest
-          #   arch: arm64
           - version: 'pre'
             os: ubuntu-latest
             arch: x64
-          - version: '1.12'
+          - version: 'pre'
             os: windows-latest
             arch: x64
+          - version: 'pre'
+            os: macOS-latest
+            arch: arm64            
 
     steps:
       - uses: actions/checkout@v4

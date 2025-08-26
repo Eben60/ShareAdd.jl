@@ -1,12 +1,20 @@
 ## Changelog
 
+### Release 2.4.0
+
+_2025-08-27_ 
+
+- Bug fix and minor improvements of [`ShareAdd.tidyup`](@ref).
+- Removed warnings, docs and workaround tips for a Julia v1.12 with VSCode [issue](https://github.com/julia-vscode/julia-vscode/issues/3833) introduced in '`v2.3.0`', as the issue appears to has been fixed in the meanwhile.
+- Added a new field `is_registered` to [`ShareAdd.PackageInfo`](@ref). This could in theory be breaking in some uses, however I can't imagine any realistic usage case where the change could entail any issues, thus the change was considered not "breaking enough" to warrant a new major version.
+
 ### Release 2.3.0
 
 _2025-06-22_ 
 
 - Added [`ShareAdd.tidyup`](@ref) function for cleaning up cluttered shared environments.
 - Added docs section on [Installation and First Steps](@ref "Installation and first steps").
-- Warnings, docs and workaround tips for an [issue](@ref "Note for Julia v1.12 in VSCode"), which may occur with Julia v1.12 in VSCode.
+- Warnings, docs and workaround tips for an [issue](https://github.com/julia-vscode/julia-vscode/issues/3833), which may occur with Julia v1.12 in VSCode.
 - Some fixes and refactoring.
 
 ### Release 2.2.0

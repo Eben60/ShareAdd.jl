@@ -24,10 +24,6 @@ See also [`make_current_mnf`](@ref) and [`update`](@ref).
 If `update_all` or `update_env` kwarg is set, `@usingany` can be called without specifying any package(s) for import. 
 If `update_pkg` kwarg is set, package(s) to import must be specified.
 
-> **⚠️ Note for Julia v1.12 in VSCode**  
->
-> `@usingany` may need to install new packages, with dialogs implemented via `REPL.TerminalMenus`, which appear to be broken with Julia **v1.12** in **VSCode**. See package docs for more info and workarounds. Importing already installed packages by `@usingany` (the most common usage) works OK. A warning will be issued before a call to `REPL.TerminalMenus` dialog, giving the user the possibility to abort.
-
 This macro is exported.
 
 # Examples
@@ -76,10 +72,6 @@ Activates a temporary environment, optionally installs packages into it and load
 
 Afterwards, if `@usingtmp` was called with arguments, the corresponding packages will be installed into that temporary env, 
 and imported with `using` keyword.
-
-> **⚠️ Note for Julia v1.12 in VSCode**  
->
-> `@usingtmp` may need to install new packages, with dialogs implemented via `REPL.TerminalMenus`, which appear to be broken with Julia **v1.12** in **VSCode**. A warning will be issued before a call to `REPL.TerminalMenus` dialog, giving the user the possibility to abort. See package docs for more info and workarounds.
 
 This macro is exported.
 """

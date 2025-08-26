@@ -42,6 +42,8 @@ include("AbortableTerminalMenu/AbortableTerminalMenu.jl")
 using .AbortableTerminalMenu: AbortableMultiSelectMenu, request
 
 const testfolder_prefix = "z2del-0nzj"
+const IS_TESTING = Ref(false)
+
 
 include("types.jl")
 include("optimset.jl")

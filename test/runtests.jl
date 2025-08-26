@@ -1,6 +1,8 @@
 using ShareAdd
 using ShareAdd: cleanup_testenvs
 
+ShareAdd.IS_TESTING[] = true
+
 using SafeTestsets
 
 ShareAdd.env_folders(; create=true)
@@ -20,4 +22,5 @@ include("testing_utilities.jl")
 @safetestset "reset" include("tests_reset.jl")
 @safetestset "Env Manipulations" include("tests_envs_manipulations.jl")
 @safetestset "various tests" include("tests_various.jl")
+ShareAdd.IS_TESTING[] = false
 cleanup_testenvs()

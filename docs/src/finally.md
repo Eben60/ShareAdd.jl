@@ -1,5 +1,12 @@
 ## Changelog
 
+### Release 2.4.0
+
+_2025-08-XX_ 
+
+- Bug fix and minor improvements of [`ShareAdd.tidyup`](@ref).
+- Added a new field `is_registered` to [`ShareAdd.PackageInfo`](@ref). This could in theory be breaking in some uses, however I can't imagine any realistic usage case where the change could entail any issues, thus the change was considered not "breaking enough" to warrant a new major version.
+
 ### Release 2.3.0
 
 _2025-06-22_ 

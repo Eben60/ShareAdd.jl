@@ -36,6 +36,10 @@ It is recommmended to install ShareAdd into your main (a.k.a. default) shared en
 
 After the installation, you could use the [`ShareAdd.info()`](@ref) function to check the state of your shared environment(s), and [`ShareAdd.tidyup()`](@ref) to move most of the packages from your main shared env into other shared environments. You may also want to add `using ShareAdd` directive to your `startup.jl` file. 
 
+## Limitations
+
+`ShareAdd` doesn't (try to) support all `Pkg's` features. It relies on package names only, and on packages being registered. UUIDs are ignored, as well as information about the branch, version, or source of the package, which might be present in `Project.toml` or `Manifest.toml`. Take this into account esp. when using [`ShareAdd.tidyup()`](@ref) function.
+
 ## `@usingany` macro
 
 > **⚠️ Note for Julia v1.12 in VSCode**  

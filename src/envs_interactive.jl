@@ -82,10 +82,6 @@ Returns `:success` if the operation was successful, and `nothing` if the user se
 
 Throws an error on unavailable packages.
 
-> **⚠️ Note for Julia v1.12 in VSCode**  
->
-> `make_importable` may need to install new packages, with dialogs implemented via `REPL.TerminalMenus`, which appear to be broken with Julia **v1.12** in **VSCode**. A warning will be issued before a call to `REPL.TerminalMenus` dialog, giving the user the possibility to abort. See package docs for more info and workarounds.
-
 # Examples
 ```julia-repl
 julia> using ShareAdd
@@ -372,11 +368,9 @@ When called without arguments, it applies to the main shared environment.
 It opens a series of dialogs, prompting the user to select which packages to move out and where to move them.
 
 NOTE: The general limitations of ShareAdd apply: It relies on package names only (i.e. UUIDs ignored), and on packages being registered. 
-Any unregistered packages in the env being tidyied up will be skipped, with an info about displayed to user.
+Any unregistered packages in the env being tidyied up will be skipped, with an info about displayed to user. Information about specified 
+source, branch, or version of packages being moved into a different env will be lost. 
 
-> **⚠️ Note for Julia v1.12 in VSCode**  
->
-> `tidyup` relies on dialogs implemented via `REPL.TerminalMenus`, which appear to be broken with Julia **v1.12** in **VSCode**. A warning will be issued before a call to `REPL.TerminalMenus` dialog, giving the user the possibility to abort. See package docs for more info and workarounds.
 """
 function tidyup(nm::AbstractString = main_env_name(true))
     return nm |> getenvinfo |> tidyup

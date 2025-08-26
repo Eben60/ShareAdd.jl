@@ -42,9 +42,6 @@ After the installation, you could use the [`ShareAdd.info()`](@ref) function to 
 
 ## `@usingany` macro
 
-> **⚠️ Note for Julia v1.12 in VSCode**  
-> `@usingany` may need to install new packages, with dialogs implemented via `REPL.TerminalMenus`, which appear to be broken with Julia **v1.12** in **VSCode**. See [below](@ref "Note for Julia v1.12 in VSCode") for more info and workarounds. Importing already installed packages by `@usingany` (the most common usage) works OK.
-
 This macro makes package(s) available, if they are not already, and loads them with `using` keyword.
 
 - If a package is available in an environment in `LOAD_PATH`, that's OK.
@@ -183,14 +180,6 @@ The procedure is in parts similar to described above for Julia upgrade.
 - If the main env folder (e.g. `v1.11`) was among the copied, `ShareAdd` is assumed to be installed, otherwise install it there.
 - Update the main environment from the `Pkg` command line.
 - Update all shared environments using `ShareAdd.update()`.  
-
-## Note for Julia v1.12 in VSCode
-
-Some of the `ShareAdd` functions may start user dialogs, which are implemented through [`REPL.TerminalMenus`](https://docs.julialang.org/en/v1/stdlib/REPL/#REPL.TerminalMenus), a part of the Julia's standard library package [`REPL`](https://docs.julialang.org/en/v1/stdlib/REPL/#REPL). Unfortunately `REPL.TerminalMenus` appear to be broken with Julia `v1.12` in VSCode, as of Julia `v1.12.0-beta4`. Actually it was not working perfectly in `VSCode` under previous versions of Julia too (s. [this issue](https://github.com/julia-vscode/julia-vscode/issues/2668) and links therein), but it is now [much worse](https://github.com/julia-vscode/julia-vscode/issues/3833) under `v1.12`. 
-
-Whether the dialog will be started depends on specific circumstances, e.g. for `@usingany` it is if a package to be imported is already available in some shared env. Before starting such a dialog, if Julia ≥ v1.12 under VSCode environment is detected, a warning will be issued, giving the user the opportunity to press `Ctrl/C`. 
-
-In such a case you may execute the ShareAdd macro/function from Terminal, or run your script from Terminal, or execute VSCode command "Julia: Run File in New Process" once. After the package or env installation/moving/deletion, you can return to the normal use of VSCode. Alternatively you can just perform the action using `Pkg` functions. 
 
 ## Reference
 

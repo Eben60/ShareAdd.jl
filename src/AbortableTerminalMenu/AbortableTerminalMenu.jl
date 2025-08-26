@@ -12,6 +12,6 @@ include("request.jl")
 include("MultiSelectMenu.jl")
 
 # export AbortableMultiSelectMenu
-export request # warning added to TerminalMenus' request
+export request 
 
 end

@@ -4,7 +4,7 @@ is_minor_version(v1::VersionNumber, v2::VersionNumber) =
 """
     _locate_project_file(dir) -> Union{Nothing, String}
 
-Return the path to the first `JuliaProject.toml` (as introduced in Julia v1.12) 
+Return the path to the first `JuliaProject.toml` 
 or `Project.toml` found in `dir`, or `nothing`.
 """
 function _locate_project_file(dir)

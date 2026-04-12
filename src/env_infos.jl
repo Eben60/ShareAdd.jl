@@ -1,6 +1,19 @@
 is_minor_version(v1::VersionNumber, v2::VersionNumber) = 
     v1.major == v2.major && v1.minor == v2.minor
 
+"""
+    _locate_project_file(dir) -> Union{Nothing, String}
+
+Return the path to the first `JuliaProject.toml` (as introduced in Julia v1.12) 
+or `Project.toml` found in `dir`, or `nothing`.
+"""
+function _locate_project_file(dir)
+    for name in ("JuliaProject.toml", "Project.toml")
+        f = joinpath(dir, name)
+        isfile(f) && return f
+    end
+    return nothing
+end
 
 """
     env_folders(; depot = first(DEPOT_PATH), create=false) -> 
@@ -144,9 +157,9 @@ function is_shared_environment(env_name::AbstractString, depot = first(DEPOT_PAT
 end 
 
 function list_env_pkgs(env_path) 
-    fl = joinpath(env_path, "Project.toml")
-    isfile(fl) || return String[]
-    project = TOML.parsefile(joinpath(env_path, "Project.toml"))
+    fl = _locate_project_file(env_path)
+    isnothing(fl) && return String[]
+    project = TOML.parsefile(fl)
     haskey(project, "deps") || return String[]
     return keys(project["deps"]) |> collect |> sort
 end

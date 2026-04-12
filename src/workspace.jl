@@ -81,19 +81,6 @@ function _samedir(a, b)
     end
 end
 
-"""
-    _locate_project_file(dir::String) -> Union{Nothing, String}
-
-Return the path to the first `Project.toml` (or `JuliaProject.toml`)
-found in `dir`, or `nothing`.
-"""
-function _locate_project_file(dir)
-    for name in ("JuliaProject.toml", "Project.toml")
-        f = joinpath(dir, name)
-        isfile(f) && return f
-    end
-    return nothing
-end
 
 """
     workspace_sibling_packages(root_project::String, current_project::String)

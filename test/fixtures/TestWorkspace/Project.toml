@@ -1,0 +1,7 @@
+name = "TestWorkspace"
+uuid = "0fa5737b-004a-4761-84c4-342f0fd0ba09"
+version = "0.1.0"
+authors = ["Eben60"]
+
+[workspace]
+projects = ["Level1Proj", "Level1Proj/Level2Proj/FloatingProj", "Level1Proj/Level2Proj/Level3-1_Proj"]

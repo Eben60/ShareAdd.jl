@@ -17,8 +17,21 @@ discovered root.
 """
 function find_workspace_root(project_file)
     VERSION >= v"1.12" || return nothing
-    root = _find_parent_workspace(project_file)
+    
+    root = nothing
+    if isfile(project_file)
+        data = TOML.parsefile(project_file)
+        if get(data, "workspace", nothing) isa Dict && get(data["workspace"], "projects", nothing) isa Vector
+            root = project_file
+        end
+    end
+
+    if isnothing(root)
+        root = _find_parent_workspace(project_file)
+    end
+    
     isnothing(root) && return nothing
+    
     # Walk up further to handle nested workspaces
     while true
         parent = _find_parent_workspace(root)
@@ -128,23 +141,26 @@ function _collect_siblings!(result, base_dir,
     for proj_rel in projects
         proj_rel isa AbstractString || continue
         proj_dir = abspath(joinpath(base_dir, proj_rel))
-        _samedir(proj_dir, current_dir) && continue
 
         proj_file = _locate_project_file(proj_dir)
         isnothing(proj_file) && continue
         sibling_data = TOML.parsefile(proj_file)
 
-        # The sibling itself as a package
-        sibling_name = get(sibling_data, "name", nothing)
-        if sibling_name isa String && !(sibling_name in current_deps) && !haskey(result, sibling_name)
-            result[sibling_name] = proj_dir
-        end
+        is_current = _samedir(proj_dir, current_dir)
 
-        # The sibling's declared deps
-        for dep_name in keys(get(sibling_data, "deps", Dict{String,Any}()))
-            dep_name in current_deps && continue
-            haskey(result, dep_name) && continue
-            result[dep_name] = proj_dir
+        if !is_current
+            # The sibling itself as a package
+            sibling_name = get(sibling_data, "name", nothing)
+            if sibling_name isa String && !(sibling_name in current_deps) && !haskey(result, sibling_name)
+                result[sibling_name] = proj_dir
+            end
+
+            # The sibling's declared deps
+            for dep_name in keys(get(sibling_data, "deps", Dict{String,Any}()))
+                dep_name in current_deps && continue
+                haskey(result, dep_name) && continue
+                result[dep_name] = proj_dir
+            end
         end
 
         # Nested workspace inside the sibling

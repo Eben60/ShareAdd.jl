@@ -209,8 +209,11 @@ function check_packages(packages; depot = first(DEPOT_PATH)) # packages::Abstrac
     ws_pkgs, ws_paths = check_workspace_packages(packages, Base.active_project())
 
     for pk in packages
-        if (pk in current_pr.pkgs)
+        if (pk in current_pr.pkgs) || (pk == current_pr.name)
             push!(inpath_pkgs, pk)
+        elseif pk in ws_pkgs
+            # Workspace siblings take absolute precedence; we will add their
+            # specific project directory to the LOAD_PATH later.
         else
             if pk in keys(shared_pkgs)
                 if shared_pkgs[pk].in_path 
@@ -220,7 +223,7 @@ function check_packages(packages; depot = first(DEPOT_PATH)) # packages::Abstrac
                 end
             elseif is_in_registries(pk)
                 push!(installable_pkgs, pk)
-            elseif !(pk in ws_pkgs)
+            else
                 push!(unavailable_pkgs, pk)
             end
         end
@@ -244,7 +247,8 @@ function current_env(; depot = first(DEPOT_PATH))
 
 
     pr = Base.active_project()
-    pkgs = isfile(pr) ? keys(TOML.parsefile(pr)["deps"]) : Set(String[])
+    project_data = isfile(pr) ? TOML.parsefile(pr) : Dict{String,Any}()
+    pkgs = keys(get(project_data, "deps", Dict{String,Any}()))
     curr_pr_path = dirname(pr)
     d = curr_pr_path |> basename
     (base_name, extension) = splitext(d)

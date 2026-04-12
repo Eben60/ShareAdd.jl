@@ -224,4 +224,99 @@ end
     end
 end
 
+
+# ── Multi-level fixture ───────────────────────────────────────────────────
+#
+# The static fixture at test/fixtures/TestWorkspace mirrors the manual
+# testing workspace in tmp/TestWorkspace.  Its structure is:
+#
+#   TestWorkspace/                   (workspace root)
+#     Project.toml                   workspace: [Level1Proj, FloatingProj, Level3-1_Proj]
+#     Level1Proj/
+#       Project.toml                 deps: JSON, Mendeleev; workspace: [Level2Proj]
+#       Level2Proj/
+#         Project.toml               deps: MacroTools, Unitful; workspace: [Level3Proj, Level3-1_Proj]
+#         FloatingProj/
+#           Project.toml             deps: Example   ← listed in ROOT workspace (path-based)
+#         Level3-1_Proj/
+#           Project.toml             deps: YAArguParser, About  (no name → pure workspace sub-root)
+#         Level3Proj/
+#           Project.toml             deps: Compat
+#
+# All workspace packages (the union visible via `pkg> st --workspace`):
+#   About, Compat, Example, FloatingProj, JSON, Level1Proj, Level2Proj,
+#   Level3Proj, MacroTools, Mendeleev, Unitful, YAArguParser
+#
+# Each subproject should see all workspace packages EXCEPT its own name and
+# its own declared deps (those are already available without LOAD_PATH magic).
+
+@testset "MultiLevel TestWorkspace fixture" begin
+
+    # All packages that are workspace-visible across the whole tree
+    ALL_WS = Set([
+        "About", "Compat", "Example", "FloatingProj", "JSON",
+        "Level1Proj", "Level2Proj", "Level3Proj",
+        "MacroTools", "Mendeleev", "Unitful", "YAArguParser",
+    ])
+
+    fixture_src = joinpath(@__DIR__, "fixtures", "TestWorkspace")
+
+    mktempdir() do tmp
+        # Copy the static fixture into the temp dir so we don't mutate the repo
+        ws_root = joinpath(tmp, "TestWorkspace")
+        cp(fixture_src, ws_root)
+
+        # Helper: expected sibling set for a project with `own_name` and `own_deps`
+        function expected_siblings(own_name, own_deps)
+            excl = isnothing(own_name) ? Set(own_deps) : union(Set(own_deps), Set([own_name]))
+            setdiff(ALL_WS, excl)
+        end
+
+        # Table: (relative project path, own package name, own declared deps)
+        cases = [
+            ("Project.toml",
+                "TestWorkspace",  String[]),
+            ("Level1Proj/Project.toml",
+                "Level1Proj",     ["JSON", "Mendeleev"]),
+            ("Level1Proj/Level2Proj/Project.toml",
+                "Level2Proj",     ["MacroTools", "Unitful"]),
+            ("Level1Proj/Level2Proj/FloatingProj/Project.toml",
+                "FloatingProj",   ["Example"]),
+            ("Level1Proj/Level2Proj/Level3-1_Proj/Project.toml",
+                nothing,          ["About", "YAArguParser"]),
+            ("Level1Proj/Level2Proj/Level3Proj/Project.toml",
+                "Level3Proj",     ["Compat"]),
+        ]
+
+        for (rel_path, own_name, own_deps) in cases
+            proj_file  = joinpath(ws_root, rel_path)
+            label      = something(own_name, "<Level3-1_Proj>")
+            expected   = expected_siblings(own_name, own_deps)
+
+            root = find_workspace_root(proj_file)
+
+            @testset "$label" begin
+                @test !isnothing(root)
+
+                if !isnothing(root)
+                    sibs = workspace_sibling_packages(root, proj_file)
+                    actual = Set(keys(sibs))
+
+                    missing_pkgs = setdiff(expected, actual)
+                    extra_pkgs   = setdiff(actual,   expected)
+
+                    @test isempty(missing_pkgs)  # all expected siblings found
+                    @test isempty(extra_pkgs)    # no unexpected siblings
+
+                    # The own project and its own deps must NOT appear in siblings
+                    for dep in own_deps
+                        @test !haskey(sibs, dep)
+                    end
+                    isnothing(own_name) || @test !haskey(sibs, own_name)
+                end
+            end
+        end
+    end # mktempdir
+end # @testset "MultiLevel TestWorkspace fixture"
+
 end # top-level @testset "Workspace"

@@ -1,0 +1,7 @@
+name = "Level3Proj"
+uuid = "7feb2e33-e76d-41a7-8095-93a15de50c3b"
+version = "0.1.0"
+authors = ["Eben60"]
+
+[deps]
+Compat = "34da2185-b29b-5c13-b0c7-acf172513d20"

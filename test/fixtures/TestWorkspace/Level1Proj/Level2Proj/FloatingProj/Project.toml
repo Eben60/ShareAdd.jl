@@ -1,0 +1,7 @@
+name = "FloatingProj"
+uuid = "05166544-267c-497c-89d0-16a04235776f"
+version = "0.1.0"
+authors = ["Eben60"]
+
+[deps]
+Example = "7876af07-990d-54b4-ab0e-23690620f79a"

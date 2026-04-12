@@ -1,0 +1,14 @@
+name = "Level2Proj"
+uuid = "e045126b-c864-4826-98fe-27bf3bc4bdf5"
+version = "0.1.0"
+authors = ["Eben60"]
+
+[deps]
+Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
+MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
+
+[workspace]
+projects = ["Level3Proj", "Level3-1_Proj"]
+
+[compat]
+Unitful = "1.28.0"

@@ -1,5 +1,11 @@
 ## Changelog
 
+### Release 2.5.0
+
+_2026-04-12_ 
+
+- Added support for the Workspace feature of Julia v1.12.
+
 ### Release 2.4.0
 
 _2025-08-27_ 
@@ -101,6 +107,6 @@ The AI from [Codeium](https://codeium.com/) helped me and bugged me (pun intende
 
 ## Copyright and License
 
-© 2024, 2025 Eben60
+© 2024-2026 Eben60
 
 MIT License (see separate file `LICENSE`)

@@ -53,6 +53,7 @@ include("info.jl")
 include("utils_env.jl")
 include("update_packages.jl")
 include("temporary_envs.jl")
+include("workspace.jl")
 include("macros.jl")
 include("showenv.jl")
 

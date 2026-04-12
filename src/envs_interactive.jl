@@ -101,7 +101,7 @@ function make_importable(packages)
 
     package_loaded(packages) && return :success
 
-    (; inshared_pkgs, installable_pkgs, unavailable_pkgs, shared_pkgs, current_pr) = check_packages(packages)
+    (; inshared_pkgs, installable_pkgs, unavailable_pkgs, shared_pkgs, current_pr, ws_paths) = check_packages(packages)
     isempty(unavailable_pkgs) || error("The following packages are not available from any registry: $unavailable_pkgs")
 
     if !isempty(installable_pkgs) 
@@ -120,6 +120,20 @@ function make_importable(packages)
         pkinfos = [shared_pkgs[p] for p in inshared_pkgs]
         envs2add = optim_set(pkinfos)
         sh_add(envs2add)
+    end
+
+    # Workspace fallback (Julia 1.12+): add sibling project paths only for
+    # packages that are still not reachable through LOAD_PATH.
+    if !isempty(ws_paths)
+        ws_candidates = collect(keys(ws_paths))
+        refreshed = check_packages(ws_candidates)
+        still_needed = setdiff(ws_candidates, refreshed.inpath_pkgs)
+        for pkg in still_needed
+            ws_path = ws_paths[pkg]
+            if ws_path ∉ LOAD_PATH
+                push!(LOAD_PATH, ws_path)
+            end
+        end
     end
 
     return :success

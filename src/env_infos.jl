@@ -192,6 +192,9 @@ function check_packages(packages; depot = first(DEPOT_PATH)) # packages::Abstrac
     installable_pkgs = String[]
     unavailable_pkgs = String[]
 
+    # Check workspace siblings (Julia 1.12+)
+    ws_pkgs, ws_paths = check_workspace_packages(packages, Base.active_project())
+
     for pk in packages
         if (pk in current_pr.pkgs)
             push!(inpath_pkgs, pk)
@@ -204,12 +207,12 @@ function check_packages(packages; depot = first(DEPOT_PATH)) # packages::Abstrac
                 end
             elseif is_in_registries(pk)
                 push!(installable_pkgs, pk)
-            else
+            elseif !(pk in ws_pkgs)
                 push!(unavailable_pkgs, pk)
             end
         end
     end
-    return (; inpath_pkgs, inshared_pkgs, installable_pkgs, unavailable_pkgs, shared_pkgs, current_pr)
+    return (; inpath_pkgs, inshared_pkgs, installable_pkgs, unavailable_pkgs, shared_pkgs, current_pr, ws_paths)
 end
 
 check_packages(package::AbstractString; depot = first(DEPOT_PATH)) = check_packages([package]; depot) 

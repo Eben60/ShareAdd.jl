@@ -22,6 +22,7 @@ This Julia package helps to reduce clutter in your main shared environment (and 
 - __Stacked Environments__: A concept of using multiple environments at the same time, so that the packages from each environment are available. Realized by having multiple (shared) envs in the `LOAD_PATH`. This is the main mechanism behind `ShareAdd`. [🔗](https://docs.julialang.org/en/v1/manual/code-loading/#Environment-stacks).
 - __Project__: A directory containing a `Project.toml` file as well as the source and other relevant files. Project is a subtype of environment.
 - __Package__: Is a project adhering to a certain structure, which contains the source files and other resources, suitable for distribution. Packages can be loaded with `using` or `import`. [🔗](https://docs.julialang.org/en/v1/manual/code-loading/#Package-directories) 
+- __Workspace__: (Julia v1.12+) A feature that allows managing multiple related projects (such as a main package and its test or docs sub-projects) within a single directory tree under a root `Project.toml`, sharing a unified `Manifest.toml`. [🔗](https://pkgdocs.julialang.org/dev/environments/#Workspaces)
 
 ## Installation and first steps
 
@@ -38,7 +39,13 @@ After the installation, you could use the [`ShareAdd.info()`](@ref) function to 
 
 ## Limitations
 
-`ShareAdd` doesn't (try to) support all `Pkg's` features. It relies on package names only, and on packages being registered. UUIDs are ignored, as well as information about the branch, version, or source of the package, which might be present in `Project.toml` or `Manifest.toml`. Take this into account esp. when using [`ShareAdd.tidyup()`](@ref) function.
+`ShareAdd` doesn't (try to) support all `Pkg's` features. It relies on package names only, and *generally* on packages being registered. UUIDs are ignored, as well as information about the branch, version, or source of the package, which might be present in `Project.toml` or `Manifest.toml`. Take this into account esp. when using [`ShareAdd.tidyup()`](@ref) function.
+
+### *Using unregistered packages*
+
+- Workspaces: Packages that are part of the current Workspace are supported automatically.
+
+- You can manually install an unregistered package into a shared environment, then it becomes available through the `@usingany` macro.
 
 ## `@usingany` macro
 
@@ -75,7 +82,7 @@ Now, first, you add ShareAdd to your "main" (standard) enviroment, making it ava
 (YourEnv) pkg> 
 ```
 
-By that occasion you may also want to clean your standard environment: It is generally not recommended having a lot of packages there.
+By that occasion you may also want to clean your standard environment: It is generally not recommended having a lot of packages there. [`ShareAdd.tidyup`](@ref) would help you.
 
 Now, the only thing you need is to type into REPL (or adding to your script) the following lines:
 
@@ -103,6 +110,12 @@ using ShareAdd
 ### `@usingany` without explicitly calling `@usingany`
 
 `ShareAdd.jl` can be combined nicely with [`BasicAutoloads.jl`](https://juliahub.com/ui/Packages/General/BasicAutoloads). See this [Discourse post](https://discourse.julialang.org/t/ann-shareadd-jl-making-easy-to-import-packages-from-multiple-environments/121261/3?u=eben60) to learn how get packages silently loaded if you call their functions in the REPL - e.g. if you type `mean([1,2,3])` or `1.55u"V"`. 
+
+### `@usingany` with Julia v1.12 Workspaces
+
+Starting with Julia v1.12, `Pkg` introduced **Workspaces** to group multiple sub-projects together. `ShareAdd` seamlessly supports this architecture. 
+
+If you call `@usingany SomePackage` from within a workspace sub-project, it will automatically check if `SomePackage` is available as a sibling project within your workspace tree (or is a listed dependency of a sibling). If a match is found, `ShareAdd` will add that sibling's path to your `LOAD_PATH`.
 
 ## Versioned manifests
 

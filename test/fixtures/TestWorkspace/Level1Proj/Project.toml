@@ -1,0 +1,14 @@
+name = "Level1Proj"
+uuid = "58f52e0e-cd10-435b-8ea0-599f825d925b"
+version = "0.1.0"
+authors = ["Eben60"]
+
+[deps]
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+Mendeleev = "c116f080-063d-490a-9873-2b5b2cce4c34"
+
+[workspace]
+projects = ["Level2Proj"]
+
+[compat]
+Mendeleev = "1.0.2"

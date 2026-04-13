@@ -1,6 +1,19 @@
 is_minor_version(v1::VersionNumber, v2::VersionNumber) = 
     v1.major == v2.major && v1.minor == v2.minor
 
+"""
+    _locate_project_file(dir) -> Union{Nothing, String}
+
+Return the path to the first `JuliaProject.toml` 
+or `Project.toml` found in `dir`, or `nothing`.
+"""
+function _locate_project_file(dir)
+    for name in ("JuliaProject.toml", "Project.toml")
+        f = joinpath(dir, name)
+        isfile(f) && return f
+    end
+    return nothing
+end
 
 """
     env_folders(; depot = first(DEPOT_PATH), create=false) -> 
@@ -144,9 +157,9 @@ function is_shared_environment(env_name::AbstractString, depot = first(DEPOT_PAT
 end 
 
 function list_env_pkgs(env_path) 
-    fl = joinpath(env_path, "Project.toml")
-    isfile(fl) || return String[]
-    project = TOML.parsefile(joinpath(env_path, "Project.toml"))
+    fl = _locate_project_file(env_path)
+    isnothing(fl) && return String[]
+    project = TOML.parsefile(fl)
     haskey(project, "deps") || return String[]
     return keys(project["deps"]) |> collect |> sort
 end
@@ -192,9 +205,15 @@ function check_packages(packages; depot = first(DEPOT_PATH)) # packages::Abstrac
     installable_pkgs = String[]
     unavailable_pkgs = String[]
 
+    # Check workspace siblings (Julia 1.12+)
+    ws_pkgs, ws_paths = check_workspace_packages(packages, Base.active_project())
+
     for pk in packages
-        if (pk in current_pr.pkgs)
+        if (pk in current_pr.pkgs) || (pk == current_pr.name)
             push!(inpath_pkgs, pk)
+        elseif pk in ws_pkgs
+            # Workspace siblings take absolute precedence; we will add their
+            # specific project directory to the LOAD_PATH later.
         else
             if pk in keys(shared_pkgs)
                 if shared_pkgs[pk].in_path 
@@ -209,7 +228,7 @@ function check_packages(packages; depot = first(DEPOT_PATH)) # packages::Abstrac
             end
         end
     end
-    return (; inpath_pkgs, inshared_pkgs, installable_pkgs, unavailable_pkgs, shared_pkgs, current_pr)
+    return (; inpath_pkgs, inshared_pkgs, installable_pkgs, unavailable_pkgs, shared_pkgs, current_pr, ws_paths)
 end
 
 check_packages(package::AbstractString; depot = first(DEPOT_PATH)) = check_packages([package]; depot) 
@@ -228,7 +247,8 @@ function current_env(; depot = first(DEPOT_PATH))
 
 
     pr = Base.active_project()
-    pkgs = isfile(pr) ? keys(TOML.parsefile(pr)["deps"]) : Set(String[])
+    project_data = isfile(pr) ? TOML.parsefile(pr) : Dict{String,Any}()
+    pkgs = keys(get(project_data, "deps", Dict{String,Any}()))
     curr_pr_path = dirname(pr)
     d = curr_pr_path |> basename
     (base_name, extension) = splitext(d)

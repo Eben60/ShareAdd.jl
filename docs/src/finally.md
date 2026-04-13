@@ -5,7 +5,7 @@
 _2026-04-13_ 
 
 - Added support for the Workspace feature of Julia v1.12.
-- Added support for the (rarely used) `JuliaProject.toml` form of project file
+- Added support for the (rarely used) `JuliaProject.toml` form of project file name.
 
 ### Release 2.4.0
 

@@ -39,7 +39,13 @@ After the installation, you could use the [`ShareAdd.info()`](@ref) function to 
 
 ## Limitations
 
-`ShareAdd` doesn't (try to) support all `Pkg's` features. It relies on package names only, and on packages being registered. UUIDs are ignored, as well as information about the branch, version, or source of the package, which might be present in `Project.toml` or `Manifest.toml`. Take this into account esp. when using [`ShareAdd.tidyup()`](@ref) function.
+`ShareAdd` doesn't (try to) support all `Pkg's` features. It relies on package names only, and *generally* on packages being registered. UUIDs are ignored, as well as information about the branch, version, or source of the package, which might be present in `Project.toml` or `Manifest.toml`. Take this into account esp. when using [`ShareAdd.tidyup()`](@ref) function.
+
+### *Using unregistered packages*
+
+- Workspaces: Packages that are part of the current Workspace are supported automatically.
+
+- You can manually install an unregistered package into a shared environment, then it becomes available through the @usingany macro.
 
 ## `@usingany` macro
 

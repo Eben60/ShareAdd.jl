@@ -104,7 +104,9 @@ Star on [GitHub](https://github.com/Eben60/ShareAdd.jl), open an issue, contact 
 
 Some code and inspiration from [EnvironmentMigrators.jl](https://github.com/mkitti/EnvironmentMigrators.jl) by Mark Kittisopikul. 
 
-The AI from [Codeium](https://codeium.com/) helped me and bugged me (pun intended).
+## AI usage disclosure
+
+[Codeium](https://codeium.com/) (initially) and Google [Antigravity](https://antigravity.google/) (later) co-authored parts of the code under the close author's supervision.
 
 ## Copyright and License
 

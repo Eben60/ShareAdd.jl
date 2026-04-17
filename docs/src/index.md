@@ -9,6 +9,8 @@
 
 This Julia package helps to reduce clutter in your main shared environment (and thus avoid package incompatibility problems) by making it easy to use multiple shared or temporary environments. It exports two macros: [`@usingany`](@ref) and [`@usingtmp`](@ref), envisioned for two different workflows. The package also provides several [utility functions](@ref "Some other functions and usage cases") for managing shared environments.
 
+*Package name pronounced like "shayr-edd", similar to word "shared"*
+
 ## Glossary
 
 *The definitions below deviate somewhat from the strict definitions of Environment, Project, and Package as given in the Julia docs, and refer to the most common and relevant cases.*

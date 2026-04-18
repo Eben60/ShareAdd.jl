@@ -234,6 +234,55 @@ end
     end # @suppress
 end # "update"
 
+# Build a temp env that mixes one real registered package (ShareAdd itself,
+# which is definitely in the General registry) and one unregistered package.
+# "FakeUnregistered" does NOT start with "Fakeproj", so is_registered()
+# returns false even in test mode.
+shareadd_pkg = (
+    name    = "ShareAdd",
+    uuid    = "27c01619-3163-4fe3-a204-36d38c32eb7d",
+    version = v"2.0.0",
+)
+unreg_pkg = (
+    name    = "FakeUnregistered",
+    uuid    = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+    version = v"0.1.0",
+)
+
+e5 = make_tmp_env(envs_folder)
+create_project(e5, [shareadd_pkg, unreg_pkg])
+
+@testset "unregistered packages" begin
+    using ShareAdd: update, info, is_registered
+
+    @test !is_registered("FakeUnregistered")
+
+    # info(; upgradable=true) must NOT throw even when the env contains
+    # an unregistered package, and must emit @info about it.
+    @test_logs (:info, r"not registered") match_mode=:any begin
+        redirect_stdout(devnull) do
+            info("@$(e5.name)"; upgradable=true)
+        end
+    end
+
+    # update() on an env with an unregistered package must issue @warn.
+    @test_logs (:warn, r"not registered") match_mode=:any begin
+        try
+            redirect_stdout(devnull) do
+                update("@$(e5.name)")
+            end
+        catch
+            # Pkg may throw because the manifest has a pinned git-tree-sha1 
+            # for a fake env – that's OK; the warning must fire before Pkg runs.
+        end
+    end
+
+    # Clean up
+    ShareAdd.delete("@$(e5.name)"; force=true)
+    @test !isdir(e5.path)
+end # "unregistered packages"
+
+
 @testset "delete_env" begin
     @suppress begin
     using ShareAdd: delete

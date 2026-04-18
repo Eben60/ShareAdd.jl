@@ -102,16 +102,21 @@ end
 
 function display_upgradable(shared_envs, env_dict, pkg_dict)
     upgradable_envs = []
+    unregistered_pkgs = String[]
 
     all_envs = env_dict |> keys
     all_pkgs = pkg_dict |> keys |> collect
-    lastversions = latest_version(all_pkgs)
+
+    registered_pkgs = filter(p -> is_registered(p), all_pkgs)
+    append!(unregistered_pkgs, setdiff(all_pkgs, registered_pkgs))
+
+    lastversions = latest_version(registered_pkgs)
     
     for (nm, env) in shared_envs
         nm in all_envs || continue
         upgradable_pks = []
         pkgs = env.pkgs
-        specific_pkgs = intersect(all_pkgs, pkgs)
+        specific_pkgs = intersect(registered_pkgs, pkgs)
         installed_v = pkg_version(env, specific_pkgs)
         for pkg in specific_pkgs
             if installed_v[pkg] < lastversions[pkg]
@@ -124,8 +129,15 @@ function display_upgradable(shared_envs, env_dict, pkg_dict)
         end
     end
 
+    some_unregistered = !isempty(unregistered_pkgs)
+    if some_unregistered
+        sort!(unregistered_pkgs)
+        @info "The following packages are not registered and cannot be checked for updates: $unregistered_pkgs"
+    end
+
     if isempty(upgradable_envs)
-        println("All packages are up to date")
+        unreg_clause = some_unregistered ? "(registered)" : ""
+        println("All $(unreg_clause) packages are up to date")
     else
         sort!(upgradable_envs, by=x->x.env)
         print_upgradable(upgradable_envs)
@@ -232,22 +244,28 @@ function collect_pkgs(d)
     return pkgs
 end
 
-function latest_version(pkg_name::AbstractString; registry=nothing)
-    registry = get_in_mem_registry(; registry)
-    ch1 = pkg_name[1] |> uppercase
-    k = "$ch1/$pkg_name/Versions.toml"
-    toml = registry[k]
-    v = TOML.tryparse(toml) |> keys .|> VersionNumber |> maximum
+function latest_version(pkg_name::AbstractString)
+    for reg in Pkg.Registry.reachable_registries()
+        for (_, entry) in reg.pkgs
+            if entry.name == pkg_name
+                # Pkg.Registry.registry_info is not public API;
+                # its signature changed from (entry,) in Julia ≤1.12 
+                # to (registry, entry) in Julia 1.13+
+                info = if applicable(Pkg.Registry.registry_info, reg, entry)
+                    Pkg.Registry.registry_info(reg, entry)
+                else
+                    Pkg.Registry.registry_info(entry)
+                end
+                versions = keys(info.version_info)
+                return isempty(versions) ? v"0.0.0" : maximum(versions)
+            end
+        end
+    end
+    return v"0.0.0"
 end
 
-function latest_version(pkgs::AbstractVector{<:AbstractString}; registry=nothing)
-    registry = get_in_mem_registry(; registry)
-    return Dict(pkg_name => latest_version(pkg_name; registry) for pkg_name in pkgs)
-end
-
-function get_in_mem_registry(; registry=nothing)
-    isnothing(registry) || return registry
-    return first(Pkg.Registry.reachable_registries()).in_memory_registry
+function latest_version(pkgs::AbstractVector{<:AbstractString})
+    return Dict(pkg_name => latest_version(pkg_name) for pkg_name in pkgs)
 end
 
 function pkg_version(env::EnvInfo, pkgname::AbstractString; manifest = nothing)

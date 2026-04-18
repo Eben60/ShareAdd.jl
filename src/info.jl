@@ -248,7 +248,15 @@ function latest_version(pkg_name::AbstractString)
     for reg in Pkg.Registry.reachable_registries()
         for (_, entry) in reg.pkgs
             if entry.name == pkg_name
-                versions = keys(Pkg.Registry.registry_info(entry).version_info)
+                # Pkg.Registry.registry_info is not public API;
+                # its signature changed from (entry,) in Julia ≤1.12 
+                # to (registry, entry) in Julia 1.13+
+                info = if applicable(Pkg.Registry.registry_info, reg, entry)
+                    Pkg.Registry.registry_info(reg, entry)
+                else
+                    Pkg.Registry.registry_info(entry)
+                end
+                versions = keys(info.version_info)
                 return isempty(versions) ? v"0.0.0" : maximum(versions)
             end
         end

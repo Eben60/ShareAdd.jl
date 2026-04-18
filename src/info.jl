@@ -102,16 +102,21 @@ end
 
 function display_upgradable(shared_envs, env_dict, pkg_dict)
     upgradable_envs = []
+    unregistered_pkgs = String[]
 
     all_envs = env_dict |> keys
     all_pkgs = pkg_dict |> keys |> collect
-    lastversions = latest_version(all_pkgs)
+
+    registered_pkgs = filter(p -> is_registered(p), all_pkgs)
+    append!(unregistered_pkgs, setdiff(all_pkgs, registered_pkgs))
+
+    lastversions = latest_version(registered_pkgs)
     
     for (nm, env) in shared_envs
         nm in all_envs || continue
         upgradable_pks = []
         pkgs = env.pkgs
-        specific_pkgs = intersect(all_pkgs, pkgs)
+        specific_pkgs = intersect(registered_pkgs, pkgs)
         installed_v = pkg_version(env, specific_pkgs)
         for pkg in specific_pkgs
             if installed_v[pkg] < lastversions[pkg]
@@ -124,8 +129,15 @@ function display_upgradable(shared_envs, env_dict, pkg_dict)
         end
     end
 
+    some_unregistered = !isempty(unregistered_pkgs)
+    if some_unregistered
+        sort!(unregistered_pkgs)
+        @info "The following packages are not registered and cannot be checked for updates: $unregistered_pkgs"
+    end
+
     if isempty(upgradable_envs)
-        println("All packages are up to date")
+        unreg_clause = some_unregistered ? "(registered)" : ""
+        println("All $(unreg_clause) packages are up to date")
     else
         sort!(upgradable_envs, by=x->x.env)
         print_upgradable(upgradable_envs)

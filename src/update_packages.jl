@@ -139,6 +139,13 @@ function update(env::EnvInfo, pkgs::Union{Nothing, AbstractString, Vector{<:Abst
         updatable_pkgs = env.pkgs
     end
 
+    # Warn about unregistered packages
+    unreg = filter(p -> !is_registered(p), collect(updatable_pkgs))
+    if !isempty(unreg)
+        sort!(unreg)
+        @warn "The following packages in @$(env.name) are not registered and cannot be updated by this function: $unreg"
+    end
+
     make_current_mnf(env)
 
     if !isnothing(updatable_pkgs) && !isempty(updatable_pkgs)

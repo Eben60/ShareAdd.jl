@@ -1,5 +1,18 @@
 ## Changelog
 
+### Release 2.5.2
+
+_2026-04-18_ 
+
+- Bug fix: Handle unregistered packages gracefully in `ShareAdd.info(; upgradable=true)` and `ShareAdd.update()`.
+- Created AGENTS.md
+
+### Release 2.5.1
+
+_2026-04-17_ 
+
+- Minor docs edits.
+
 ### Release 2.5.0
 
 _2026-04-13_ 

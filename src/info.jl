@@ -244,22 +244,20 @@ function collect_pkgs(d)
     return pkgs
 end
 
-function latest_version(pkg_name::AbstractString; registry=nothing)
-    registry = get_in_mem_registry(; registry)
-    ch1 = pkg_name[1] |> uppercase
-    k = "$ch1/$pkg_name/Versions.toml"
-    toml = registry[k]
-    v = TOML.tryparse(toml) |> keys .|> VersionNumber |> maximum
+function latest_version(pkg_name::AbstractString)
+    for reg in Pkg.Registry.reachable_registries()
+        for (_, entry) in reg.pkgs
+            if entry.name == pkg_name
+                versions = keys(Pkg.Registry.registry_info(entry).version_info)
+                return isempty(versions) ? v"0.0.0" : maximum(versions)
+            end
+        end
+    end
+    return v"0.0.0"
 end
 
-function latest_version(pkgs::AbstractVector{<:AbstractString}; registry=nothing)
-    registry = get_in_mem_registry(; registry)
-    return Dict(pkg_name => latest_version(pkg_name; registry) for pkg_name in pkgs)
-end
-
-function get_in_mem_registry(; registry=nothing)
-    isnothing(registry) || return registry
-    return first(Pkg.Registry.reachable_registries()).in_memory_registry
+function latest_version(pkgs::AbstractVector{<:AbstractString})
+    return Dict(pkg_name => latest_version(pkg_name) for pkg_name in pkgs)
 end
 
 function pkg_version(env::EnvInfo, pkgname::AbstractString; manifest = nothing)

@@ -2,9 +2,10 @@
 
 ### Release 2.5.2
 
-_2026-04-18_ 
+_2026-04-19_ 
 
 - Bug fix: Handle unregistered packages gracefully in `ShareAdd.info(; upgradable=true)` and `ShareAdd.update()`.
+- Bug fix: Was a bug on Julia v1.13 due to a change in a private method in `Pkg`
 - Created AGENTS.md
 
 ### Release 2.5.1

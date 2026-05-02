@@ -10,28 +10,13 @@ updates:
           - "*"
 
   - package-ecosystem: "julia"
-    directory: "/"
+    directories:
+      - "/"
+      - "/docs"
+      - "/test"
     schedule:
       interval: "weekly"
     groups:
       all-julia-packages:
-        patterns:
-          - "*"
-
-  - package-ecosystem: "julia"
-    directory: "/docs"
-    schedule:
-      interval: "weekly"
-    groups:
-      all-docs-packages:
-        patterns:
-          - "*"
-
-  - package-ecosystem: "julia"
-    directory: "/test"
-    schedule:
-      interval: "weekly"
-    groups:
-      all-test-packages:
         patterns:
           - "*"

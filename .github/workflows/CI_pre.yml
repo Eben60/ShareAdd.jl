@@ -1,6 +1,8 @@
 name: CI_pre
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '53 7 11 * *'
 concurrency:
   # Skip intermediate builds: always.
   # Cancel intermediate builds: only if it is a pull request build.

@@ -24,5 +24,6 @@ VERSION >= v"1.12" && @safetestset "workspace" include("tests_workspace.jl")
 @safetestset "reset" include("tests_reset.jl")
 @safetestset "Env Manipulations" include("tests_envs_manipulations.jl")
 @safetestset "various tests" include("tests_various.jl")
+@safetestset "usinghere" include("tests_usinghere.jl")
 ShareAdd.IS_TESTING[] = false
 cleanup_testenvs()

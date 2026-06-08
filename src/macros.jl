@@ -39,7 +39,7 @@ macro usingany(args...)
     lastargs = length(args) - last_kwarg_index
     lastargs > 1 && error(err_msg)
 
-    (; packages, expr) = lastargs == 0 ? (; packages=nothing, expr=nothing) : parse_usings(args[end])
+    (; packages, expr) = lastargs == 0 ? (; packages=nothing, expr=nothing) : parse_usings(args[end], "@usingany")
 
     mi = make_importable(packages)
     mi != :success && error("Some packages could not be installed")
@@ -80,7 +80,7 @@ macro usingtmp()
 end
 
 macro usingtmp(arg)
-    p = parse_usings(arg)
+    p = parse_usings(arg, "@usingtmp")
     (; packages, expr) = p
 
     activate_temp()
@@ -90,11 +90,35 @@ macro usingtmp(arg)
     return q
 end
 
-function parse_usings(x)
+"""
+    @usinghere pkg
+    @usinghere pkg1, pkg2, ... 
+    @usinghere pkg: fn
+    @usinghere pkg: fn, @mcr, ... 
+
+Checks if the packages are available in the current environment or LOAD_PATH.
+If not, activates an environment in the directory of the script (or its parent if the script is in a `src` directory),
+and adds the missing packages there before importing them.
+
+This macro is exported.
+"""
+macro usinghere(arg)
+    p = parse_usings(arg, "@usinghere")
+    (; packages, expr) = p
+
+    file_str = isnothing(__source__.file) ? "none" : string(__source__.file)
+    q = quote
+        ShareAdd.activate_here($file_str, $(packages))
+        $(Meta.parse(expr))
+    end
+    return q
+end
+
+function parse_usings(x, macro_name)
     err_msg = """
-    Cannot make sense of `@usingany` arguments. 
+    Cannot make sense of `$(macro_name)` arguments. 
     If the error was NOT caused by a typo, and you believe you wrote a sensible syntax,
-    please check the docs of `@usingany` and `make_importable` """
+    please check the docs of `$(macro_name)` and `make_importable` """
 
     # usage like
     # @usingany Foo: bar

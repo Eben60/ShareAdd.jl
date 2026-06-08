@@ -7,7 +7,7 @@
 
 # ShareAdd.jl
 
-This Julia package helps to reduce clutter in your main shared environment (and thus avoid package incompatibility problems) by making it easy to use multiple shared or temporary environments. It exports two macros: [`@usingany`](@ref) and [`@usingtmp`](@ref), envisioned for two different workflows. The package also provides several [utility functions](@ref "Some other functions and usage cases") for managing shared environments.
+This Julia package helps to reduce clutter in your main shared environment (and thus avoid package incompatibility problems) by making it easy to use multiple shared or temporary environments. It exports three macros: [`@usingany`](@ref), [`@usingtmp`](@ref), and [`@usinghere`](@ref), envisioned for different workflows. The package also provides several [utility functions](@ref "Some other functions and usage cases") for managing shared environments.
 
 *Package name pronounced like "shayr-edd", similar to word "shared"*
 
@@ -141,6 +141,28 @@ using ShareAdd
 @usingtmp Foo, Bar
 @usingtmp Baz: quux
 ```
+
+## `@usinghere` macro
+
+This macro activates an environment in the directory of the current script (or its parent directory if the script is located within a `src` folder) and automatically adds any missing packages to that environment before importing them. This is specifically useful when writing reproducible standalone scripts that should self-manage their dependencies.
+
+Note: Since this macro determines the target directory relative to the script's path, it cannot be called directly from the interactive REPL.
+
+```
+using ShareAdd
+@usinghere Foo, Bar
+```
+
+By default, packages installed in the Main environment, and thus always available on that computer, will not be added to the script's env.
+You can however customize the dependency resolution behavior by providing boolean keyword arguments:
+
+```
+using ShareAdd
+@usinghere all=true Foo, Bar
+```
+
+- `all=true`: Forces all specified packages to be added directly to the script's local environment, regardless of whether they are already available in your `LOAD_PATH` or shared environments.
+- `only=true`: Leverages existing shared environments. If a package is already available in a shared environment or workspace, it will simply be pushed to your `LOAD_PATH` (acting similarly to `@usingany`). Only the packages that are completely missing will be installed locally into the script's environment.
 
 ## Some other functions and usage cases
 

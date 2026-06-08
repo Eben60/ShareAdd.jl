@@ -17,7 +17,8 @@ ShareAdd.jl helps reduce clutter in the main Julia shared environment and avoids
 
 - `ShareAdd.jl`: Main module definition, includes, and exports.
 - `types.jl`: Core data structures like `EnvInfo` and `PackageInfo`.
-- `macros.jl`: Implementation of `@usingany` and `@usingtmp` macros.
+- `macros.jl`: Implementation of `@usingany`, `@usingtmp`, and `@usinghere` macros, as well as dynamic keyword parsing.
+- `here_envs.jl`: Activation logic (`activate_here`) specific to script-local environments for the `@usinghere` macro.
 - `env_infos.jl`: Functions to query and manage shared environment states and package availability.
 - `envs_interactive.jl`: Interactive prompts and menus (using `REPL.TerminalMenus`) for managing environments (e.g., `tidyup`, `prompt2install`).
 - `utils_env.jl`: Environment utilities like `delete` and `reset`.
@@ -34,6 +35,7 @@ ShareAdd.jl helps reduce clutter in the main Julia shared environment and avoids
 - **Interactive Prompts**: Relies heavily on REPL menus to guide users when a requested package is not immediately available, allowing them to install it into an existing shared environment, create a new one, or abort.
 - **Workspace Sibling Resolution**: For Julia 1.12+, it searches upward for `Project.toml` files with `[workspace]` tables to automatically resolve sibling packages and inject them into the `LOAD_PATH`.
 - **Enums for Control Flow**: Uses a custom enum `SkipAskForceEnum` (`SKIPPING`, `ASKING`, `FORCING`) to control interactive vs. programmatic behavior in utilities like `delete()`.
+- **Keyword Argument Parsing**: Uses an `AbstractAcceptedKwargs` hierarchy (`UsinganyKwargs`, `UsinghereKwargs`) to cleanly and safely define parameter schemas across multiple macros.
 - **NamedTuples**: Frequent use of NamedTuples for returning multiple values from internal functions cleanly.
 
 ### Current limitations
@@ -50,7 +52,7 @@ ShareAdd.jl helps reduce clutter in the main Julia shared environment and avoids
 
 **Exported:**
 ```julia
-export @usingany, @usingtmp
+export @usingany, @usingtmp, @usinghere
 export @showenv
 export SKIPPING, ASKING, FORCING
 ```

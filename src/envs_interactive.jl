@@ -256,9 +256,16 @@ end
 Will return ENV_NULL to indicate that package is not to be installed in any environment (in using by tidyup)
 """
 function prompt2install(new_package::AbstractString, newenvs = String[]; envs = shared_environments_envinfos().shared_envs, env2exclude = [], option2del = false)
+
+    ide_info = 
+        "Unfortunately `REPL.TerminalMenus` may not work properly in VSCode or similar IDEs. " * "\n" *
+        "In case of issues with arrow keys, call `@usingany` from a REPL in a Terminal, " * "\n" *
+        "or add the packages manually. " * "\n" *
+        "Sorry for the inconvinience " * "\n\n"
+
     (; options, envs) = prompt2install_preproc(new_package, newenvs, envs, env2exclude; option2del)
     menu = RadioMenu(options)
-
+    isdefined(Main, :VSCodeServer) && @info ide_info maxlog=1
     @info "Use the arrow keys to move the cursor. Press Enter to select."
     println("\n" * "Please select a shared environment to install package $new_package" * "\n")
 

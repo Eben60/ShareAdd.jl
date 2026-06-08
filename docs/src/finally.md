@@ -1,5 +1,13 @@
 ## Changelog
 
+### Release 2.6.0
+
+_2026-06-14_
+
+- Implemented `@usinghere` macro
+- Extended tests
+- Minor bug fixes
+
 ### Release 2.5.2
 
 _2026-04-19_ 

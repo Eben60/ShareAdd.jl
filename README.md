@@ -6,7 +6,7 @@
 
 # ShareAdd.jl
 
-This Julia package helps to reduce clutter in your main shared environment (and thus avoid package incompatibility problems) by making it easy to use multiple shared or temporary environments. The package is primarily intended for interactive use. It exports two macros: `@usingany` and `@usingtmp`, envisioned for two different workflows. The package also provides several utility functions for managing shared environments.
+This Julia package helps to reduce clutter in your main shared environment (and thus avoid package incompatibility problems) by making it easy to use multiple shared or temporary environments. The package is primarily intended for interactive use. It exports three macros: `@usingany`, `@usingtmp`, and `@usinghere`, envisioned for different workflows. The package also provides several utility functions for managing shared environments.
 
 ## Documentation at 
 [https://eben60.github.io/ShareAdd.jl/](https://eben60.github.io/ShareAdd.jl/)

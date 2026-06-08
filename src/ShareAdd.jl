@@ -56,8 +56,9 @@ include("temporary_envs.jl")
 include("workspace.jl")
 include("macros.jl")
 include("showenv.jl")
+include("here_envs.jl")
 
-export @usingany, @usingtmp
+export @usingany, @usingtmp, @usinghere
 export @showenv
 export SKIPPING, ASKING, FORCING
 

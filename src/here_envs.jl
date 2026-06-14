@@ -6,7 +6,7 @@ Helper function for `@usinghere`. Checks if `packages` are available in the curr
 If not, it activates the environment in the script's directory (or the parent directory if the script is in `src`),
 and adds the missing packages.
 """
-function activate_here(source_file, packages)
+function activate_here(source_file, packages; all::Bool=false, only::Bool=false)
     file_path = string(source_file)
     if file_path == "none" || startswith(file_path, "REPL[") || isempty(file_path)
         error("`@usinghere` cannot be called from the REPL. It must be called from a script file.")
@@ -14,8 +14,19 @@ function activate_here(source_file, packages)
 
     packages = packages isa AbstractString ? [packages] : collect(packages)
 
-    cp = check_packages(packages)
-    missing_pkgs = collect(setdiff(packages, cp.inpath_pkgs))
+    if all
+        missing_pkgs = packages
+    elseif only
+        cp = check_packages(packages)
+        available_pkgs = union(cp.inpath_pkgs, cp.inshared_pkgs, keys(cp.ws_paths))
+        if !isempty(available_pkgs)
+            make_importable(collect(available_pkgs))
+        end
+        missing_pkgs = collect(setdiff(packages, available_pkgs))
+    else
+        cp = check_packages(packages)
+        missing_pkgs = collect(setdiff(packages, cp.inpath_pkgs))
+    end
 
     if !isempty(missing_pkgs)
         dir = dirname(abspath(file_path))

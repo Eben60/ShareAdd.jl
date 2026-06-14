@@ -17,6 +17,8 @@ docs/site/
 # environment.
 Manifest.toml
 Manifest-v*.toml
+!test/fixtures/**/Manifest.toml
+!test/fixtures/**/Manifest-v*.toml
 LocalPreferences.toml
 
 # MS Office temporary files

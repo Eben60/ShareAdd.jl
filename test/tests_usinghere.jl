@@ -53,6 +53,21 @@ end
 @test_throws ErrorException ShareAdd.activate_here("REPL[1]", ["Test"])
 @test_throws ErrorException ShareAdd.activate_here("none", ["Test"])
 @test_throws ErrorException ShareAdd.activate_here("", ["Test"])
+@test_throws ErrorException ShareAdd.activate_here("REPL[1]", ["Test"]; all=true)
+
+mktempdir() do dir
+    original_project = Base.active_project()
+    original_load_path = copy(LOAD_PATH)
+    filter!(p -> p == "@" || p == "@stdlib" || isabspath(p), LOAD_PATH)
+    try
+        ShareAdd.activate_here(joinpath(dir, "script.jl"), ["Test"]; only=true)
+        @test Base.active_project() == original_project
+    finally
+        Pkg.activate(original_project)
+        empty!(LOAD_PATH)
+        append!(LOAD_PATH, original_load_path)
+    end
+end
 
 # ---------------------------------------------------------------------------
 # Macro expansion smoke tests (no side-effects)
@@ -63,6 +78,12 @@ expr = macroexpand(@__MODULE__, :(@usinghere Test))
 
 # No-argument form has no method — throws on expansion
 @test_throws Exception macroexpand(@__MODULE__, :(@usinghere))
+
+@test_throws Exception macroexpand(@__MODULE__, :(@usinghere all=true, only=true Test))
+@test_throws Exception macroexpand(@__MODULE__, :(@usinghere all=true))
+@test_throws Exception macroexpand(@__MODULE__, :(@usinghere only=true))
+@test macroexpand(@__MODULE__, :(@usinghere all=true Test)).head == :block
+@test macroexpand(@__MODULE__, :(@usinghere only=true Test)).head == :block
 
 # ---------------------------------------------------------------------------
 # Scenario 1 — plain dir, no pre-existing Project.toml
@@ -124,6 +145,108 @@ begin
             @test dirname(Base.active_project()) == dir
             # `hello` was imported into scope by `using Example: hello`
             @test isdefined(@__MODULE__, :hello)
+        finally
+            Pkg.activate(original_project)
+            empty!(LOAD_PATH)
+            append!(LOAD_PATH, original_load_path)
+        end
+    end
+end
+
+# ---------------------------------------------------------------------------
+# Scenario 7 — all=true with stdlib
+# ---------------------------------------------------------------------------
+begin
+    original_project = Base.active_project()
+    original_load_path = copy(LOAD_PATH)
+    filter!(p -> p == "@" || p == "@stdlib" || isabspath(p), LOAD_PATH)
+    mktempdir() do dir
+        dest = joinpath(dir, "all_stdlib.jl")
+        cp(joinpath(FIXTURE_DIR, "all_stdlib.jl"), dest)
+        try
+            @suppress include(dest)
+            @test dirname(Base.active_project()) == dir
+            toml_path = joinpath(dir, "Project.toml")
+            @test isfile(toml_path)
+            @test occursin("Test", read(toml_path, String))
+        finally
+            Pkg.activate(original_project)
+            empty!(LOAD_PATH)
+            append!(LOAD_PATH, original_load_path)
+        end
+    end
+end
+
+# ---------------------------------------------------------------------------
+# Scenario 8 — all=true with mixed
+# ---------------------------------------------------------------------------
+begin
+    original_project = Base.active_project()
+    original_load_path = copy(LOAD_PATH)
+    filter!(p -> p == "@" || p == "@stdlib" || isabspath(p), LOAD_PATH)
+    mktempdir() do dir
+        dest = joinpath(dir, "all_example.jl")
+        cp(joinpath(FIXTURE_DIR, "all_example.jl"), dest)
+        try
+            @suppress include(dest)
+            @test dirname(Base.active_project()) == dir
+            toml_path = joinpath(dir, "Project.toml")
+            @test isfile(toml_path)
+            content = read(toml_path, String)
+            @test occursin("Test", content)
+            @test occursin("Example", content)
+        finally
+            Pkg.activate(original_project)
+            empty!(LOAD_PATH)
+            append!(LOAD_PATH, original_load_path)
+        end
+    end
+end
+
+# ---------------------------------------------------------------------------
+# Scenario 9 — only=true with mixed
+# ---------------------------------------------------------------------------
+begin
+    if haskey(ShareAdd.list_shared_packages(), "Example")
+        @warn "Skipping 'Scenario 9 — only=true with mixed' because Example is already installed in a shared environment."
+    else
+        original_project = Base.active_project()
+        original_load_path = copy(LOAD_PATH)
+        filter!(p -> p == "@" || p == "@stdlib" || isabspath(p), LOAD_PATH)
+        mktempdir() do dir
+            dest = joinpath(dir, "only_mixed.jl")
+            cp(joinpath(FIXTURE_DIR, "only_mixed.jl"), dest)
+            try
+                @suppress include(dest)
+                @test dirname(Base.active_project()) == dir
+                toml_path = joinpath(dir, "Project.toml")
+                @test isfile(toml_path)
+                content = read(toml_path, String)
+                @test !occursin("Test", content) # Test was available without installation
+                @test occursin("Example", content) # Example was not available, so it was installed
+            finally
+                Pkg.activate(original_project)
+                empty!(LOAD_PATH)
+                append!(LOAD_PATH, original_load_path)
+            end
+        end
+    end
+end
+
+# ---------------------------------------------------------------------------
+# Scenario 10 — only=true with stdlib only
+# ---------------------------------------------------------------------------
+begin
+    original_project = Base.active_project()
+    original_load_path = copy(LOAD_PATH)
+    filter!(p -> p == "@" || p == "@stdlib" || isabspath(p), LOAD_PATH)
+    mktempdir() do dir
+        dest = joinpath(dir, "only_stdlib.jl")
+        cp(joinpath(FIXTURE_DIR, "only_stdlib.jl"), dest)
+        try
+            @suppress include(dest)
+            @test Base.active_project() == original_project # no new env activated
+            @test !isfile(joinpath(dir, "Project.toml"))
         finally
             Pkg.activate(original_project)
             empty!(LOAD_PATH)

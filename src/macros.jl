@@ -35,9 +35,13 @@ julia> @usingany update_pkg = true Qux
 ```
 """
 macro usingany(args...)
-    (;kwargs, last_kwarg_index) = parse_kwargs(args)
+    (;kwargs, last_kwarg_index) = parse_kwargs(args, UsinganyKwargs())
+
+    if 0 + kwargs.update_all + kwargs.update_env + kwargs.update_pkg > 1
+        error("multiple update modes cannot be used together.")
+    end
     lastargs = length(args) - last_kwarg_index
-    lastargs > 1 && error(err_msg)
+    lastargs > 1 && error(err_msg("@usingany"))
 
     (; packages, expr) = lastargs == 0 ? (; packages=nothing, expr=nothing) : parse_usings(args[end], "@usingany")
 
@@ -45,8 +49,8 @@ macro usingany(args...)
     mi != :success && error("Some packages could not be installed")
 
     if isnothing(packages)
-        kwargs == AcceptedKwargs() && throw(ArgumentError("No arguments were provided to `@usingany`"))
-        kwargs == AcceptedKwargs(update_pkg=true) && 
+        kwargs == UsinganyKwargs() && throw(ArgumentError("No arguments were provided to `@usingany`"))
+        kwargs == UsinganyKwargs(update_pkg=true) && 
             throw(ArgumentError("No package(s) were provided to `@usingany`, thus no information whicht env to update"))
     end
 
@@ -95,31 +99,45 @@ end
     @usinghere pkg1, pkg2, ... 
     @usinghere pkg: fn
     @usinghere pkg: fn, @mcr, ... 
+    @usinghere kwarg = true [pkg...]
 
 Checks if the packages are available in the current environment or LOAD_PATH.
 If not, activates an environment in the directory of the script (or its parent if the script is in a `src` directory),
 and adds the missing packages there before importing them.
 
+The macro can be called with boolean keyword arguments:
+- `all::Bool`: If `true`, all packages passed are added directly to the script's environment, independently of whether they are available elsewhere.
+- `only::Bool`: If `true`, packages already available across shared environments or workspaces are pushed to the LOAD_PATH (similarly to `@usingany`). Only the truly missing packages are installed into the script's environment.
+
 This macro is exported.
 """
-macro usinghere(arg)
-    p = parse_usings(arg, "@usinghere")
+macro usinghere(args...)
+    (;kwargs, last_kwarg_index) = parse_kwargs(args, UsinghereKwargs())
+    
+    if kwargs.all && kwargs.only
+        error("`all=true` and `only=true` cannot be used together.")
+    end
+
+    lastargs = length(args) - last_kwarg_index
+    lastargs != 1 && error(err_msg("@usinghere"))
+    
+    p = parse_usings(args[end], "@usinghere")
     (; packages, expr) = p
 
     file_str = isnothing(__source__.file) ? "none" : string(__source__.file)
     q = quote
-        ShareAdd.activate_here($file_str, $(packages))
+        ShareAdd.activate_here($file_str, $(packages); all=$(kwargs.all), only=$(kwargs.only))
         $(Meta.parse(expr))
     end
     return q
 end
 
-function parse_usings(x, macro_name)
-    err_msg = """
-    Cannot make sense of `$(macro_name)` arguments. 
-    If the error was NOT caused by a typo, and you believe you wrote a sensible syntax,
-    please check the docs of `$(macro_name)` and `make_importable` """
+err_msg(macro_name) = """
+Cannot make sense of `$(macro_name)` arguments. 
+If the error was NOT caused by a typo, and you believe you wrote a sensible syntax,
+please check the docs of `$(macro_name)` and `make_importable` """
 
+function parse_usings(x, macro_name)
     # usage like
     # @usingany Foo: bar
     p = parse_using_functions(x) 
@@ -128,7 +146,7 @@ function parse_usings(x, macro_name)
     # @usingany Foo, Baz
     isnothing(p) && (p = parse_packages(x))
   
-    isnothing(p) && error(err_msg)
+    isnothing(p) && error(err_msg(macro_name))
     
     return p
 end
@@ -209,9 +227,9 @@ function parse_kwarg(arg)
     return (; kw, val)
 end
 
-function parse_kwargs(args)
+function parse_kwargs(args, kwargs_struct::AbstractAcceptedKwargs)
     i = 0
-    kwargs = AcceptedKwargs()
+    kwargs = kwargs_struct
     for arg in args
         pk = parse_kwarg(arg)
         isnothing(pk) && break

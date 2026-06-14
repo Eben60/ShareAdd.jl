@@ -199,23 +199,43 @@ update(p::Pair{<:AbstractString, <:AbstractString}; warn_if_missing=false) = upd
 
 function update_package(nm; warn_if_missing)
     packages = list_shared_packages()
-    if !haskey(packages, nm) 
-        warn_if_missing && (@warn "Package $nm not found" ;return nothing)
+    curr_env = current_env()
+    
+    in_curr = nm in curr_env.pkgs || nm == curr_env.name
+    in_shared = haskey(packages, nm)
+
+    if !in_curr && !in_shared 
+        warn_if_missing && (@warn "Package $nm not found" ; return nothing)
         error("Package $nm not found")
     end
 
-    p = packages[nm]
-    for env in p.envs
-        update(env, nm)
+    if in_curr
+        make_current_mnf(; current=true)
+        Pkg.update(nm)
+    end
+
+    if in_shared
+        p = packages[nm]
+        for env in p.envs
+            update(env, nm)
+        end
     end
 end
-@kwdef mutable struct AcceptedKwargs
+abstract type AbstractAcceptedKwargs end
+
+Base.NamedTuple(a::AbstractAcceptedKwargs) = NamedTuple([nm => getfield(a, nm) for nm in fieldnames(typeof(a))])
+Base.:(==)(a::T, b::T) where {T<:AbstractAcceptedKwargs} = NamedTuple(a) == NamedTuple(b)
+
+@kwdef mutable struct UsinganyKwargs <: AbstractAcceptedKwargs
     update_pkg::Bool = false
     update_env::Bool = false
     update_all::Bool = false
 end
-Base.:NamedTuple(a::AcceptedKwargs) = NamedTuple([nm => getfield(a, nm) for nm in fieldnames(AcceptedKwargs)])
-Base.:(==)(a::AcceptedKwargs, b::AcceptedKwargs) = NamedTuple(a) == NamedTuple(b)
+
+@kwdef mutable struct UsinghereKwargs <: AbstractAcceptedKwargs
+    all::Bool = false
+    only::Bool = false
+end
 
 function update_if_asked(flags, packages)
     if flags.update_all 

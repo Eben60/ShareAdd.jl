@@ -1,6 +1,6 @@
-versioned_mnf_supported(v = VERSION) = v >= v"1.10.8"
+versioned_mnf_supported(v=VERSION) = v >= v"1.10.8"
 
-function versioned_mnf_name(v = VERSION)
+function versioned_mnf_name(v=VERSION)
     versioned_mnf_supported() || return nothing
     return "Manifest-v$(v.major).$(v.minor).toml"
 end
@@ -20,8 +20,8 @@ function versioned_mnfs(path)
     return vs
 end
 
-is_main_env(path) = 
-    main_env_name() == (path |> abspath |> splitpath)[end] |> lowercase
+is_main_env(path) =
+    main_env_name() == (path|>abspath|>splitpath)[end] |> lowercase
 
 function has_current_mnf(path)
     isdir(path) || return nothing
@@ -32,7 +32,7 @@ end
 
 function current_mnf(path)
     isdir(path) || return nothing
-    (is_main_env(path) || ! versioned_mnf_supported() ) && 
+    (is_main_env(path) || !versioned_mnf_supported()) &&
         return joinpath(path, "Manifest.toml")
     return joinpath(path, versioned_mnf_name())
 end
@@ -47,8 +47,8 @@ function copy_mnf(path)
     return dst_mnf
 end
 
-function create_empty_mnf(path) 
-    p = joinpath(path, versioned_mnf_name()) |> touch; 
+function create_empty_mnf(path)
+    p = joinpath(path, versioned_mnf_name()) |> touch
     return p
 end
 
@@ -79,8 +79,8 @@ function make_current_mnf(p)
     versioned_mnf_supported() || return current_mnf(p)
     has_current_mnf(p) && return current_mnf(p)
     mnfs = versioned_mnfs(p)
-    length(mnfs) == 0 && return create_empty_mnf(p) 
-    return copy_mnf(p) 
+    length(mnfs) == 0 && return create_empty_mnf(p)
+    return copy_mnf(p)
 end
 
 make_current_mnf(env::EnvInfo) = make_current_mnf(env.path)
@@ -123,7 +123,7 @@ julia> ShareAdd.update("@Foo" => "bar")
 
 This function is public, not exported.
 """
-function update(env::EnvInfo, pkgs::Union{Nothing, AbstractString, Vector{<:AbstractString}} = nothing; warn_if_missing=true) 
+function update(env::EnvInfo, pkgs::Union{Nothing,AbstractString,Vector{<:AbstractString}}=nothing; warn_if_missing=true)
     curr_env = current_env()
 
     if !isnothing(pkgs)
@@ -151,7 +151,7 @@ function update(env::EnvInfo, pkgs::Union{Nothing, AbstractString, Vector{<:Abst
     if !isnothing(updatable_pkgs) && !isempty(updatable_pkgs)
         try
             Pkg.activate(env.path)
-            if isnothing(pkgs) 
+            if isnothing(pkgs)
                 Pkg.update()
             else
                 Pkg.update(updatable_pkgs; preserve=PRESERVE_NONE)
@@ -188,24 +188,24 @@ function update(nm::AbstractString; warn_if_missing=false)
 end
 
 # if just one name is specified, would normally throw an error if not found
-function update(env::AbstractString, pkgs::Union{AbstractString, Vector{<:AbstractString}}; warn_if_missing=false) 
+function update(env::AbstractString, pkgs::Union{AbstractString,Vector{<:AbstractString}}; warn_if_missing=false)
     startswith(env, "@") || error("Name of shared environment must start with @")
     update(EnvInfo(env), pkgs; warn_if_missing)
 end
 
 update(nm::Vector{<:AbstractString}; warn_if_missing=true) = (update.(nm; warn_if_missing); return nothing)
 
-update(p::Pair{<:AbstractString, <:AbstractString}; warn_if_missing=false) = update(p.first, p.second; warn_if_missing)
+update(p::Pair{<:AbstractString,<:AbstractString}; warn_if_missing=false) = update(p.first, p.second; warn_if_missing)
 
 function update_package(nm; warn_if_missing)
     packages = list_shared_packages()
     curr_env = current_env()
-    
+
     in_curr = nm in curr_env.pkgs || nm == curr_env.name
     in_shared = haskey(packages, nm)
 
-    if !in_curr && !in_shared 
-        warn_if_missing && (@warn "Package $nm not found" ; return nothing)
+    if !in_curr && !in_shared
+        warn_if_missing && (@warn "Package $nm not found"; return nothing)
         error("Package $nm not found")
     end
 
@@ -223,7 +223,8 @@ function update_package(nm; warn_if_missing)
 end
 abstract type AbstractAcceptedKwargs end
 
-Base.NamedTuple(a::AbstractAcceptedKwargs) = NamedTuple([nm => getfield(a, nm) for nm in fieldnames(typeof(a))])
+Base.NamedTuple(a::T) where {T<:AbstractAcceptedKwargs} =
+    NamedTuple(nm => getfield(a, nm) for nm in fieldnames(T))
 Base.:(==)(a::T, b::T) where {T<:AbstractAcceptedKwargs} = NamedTuple(a) == NamedTuple(b)
 
 @kwdef mutable struct UsinganyKwargs <: AbstractAcceptedKwargs
@@ -238,9 +239,9 @@ end
 end
 
 function update_if_asked(flags, packages)
-    if flags.update_all 
+    if flags.update_all
         update_all()
-    elseif flags.update_env 
+    elseif flags.update_env
         update_all_envs()
     elseif flags.update_pkg
         update(packages; warn_if_missing=true)

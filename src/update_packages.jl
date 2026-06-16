@@ -221,22 +221,6 @@ function update_package(nm; warn_if_missing)
         end
     end
 end
-abstract type AbstractAcceptedKwargs end
-
-Base.NamedTuple(a::T) where {T<:AbstractAcceptedKwargs} =
-    NamedTuple(nm => getfield(a, nm) for nm in fieldnames(T))
-Base.:(==)(a::T, b::T) where {T<:AbstractAcceptedKwargs} = NamedTuple(a) == NamedTuple(b)
-
-@kwdef mutable struct UsinganyKwargs <: AbstractAcceptedKwargs
-    update_pkg::Bool = false
-    update_env::Bool = false
-    update_all::Bool = false
-end
-
-@kwdef mutable struct UsinghereKwargs <: AbstractAcceptedKwargs
-    all::Bool = false
-    only::Bool = false
-end
 
 function update_if_asked(flags, packages)
     if flags.update_all

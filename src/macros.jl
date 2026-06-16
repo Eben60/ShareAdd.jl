@@ -1,3 +1,22 @@
+abstract type AbstractAcceptedKwargs end
+
+Base.NamedTuple(a::T) where {T<:AbstractAcceptedKwargs} =
+    NamedTuple(nm => getfield(a, nm) for nm in fieldnames(T))
+Base.:(==)(a::T, b::T) where {T<:AbstractAcceptedKwargs} = NamedTuple(a) == NamedTuple(b)
+
+@kwdef mutable struct UsinganyKwargs <: AbstractAcceptedKwargs
+    update_pkg::Bool = false
+    update_env::Bool = false
+    update_all::Bool = false
+end
+
+@kwdef mutable struct UsinghereKwargs <: AbstractAcceptedKwargs
+    all::Bool = false
+    only::Bool = false
+end
+
+
+
 """
     @usingany pkg
     @usingany pkg1, pkg2, ... 
@@ -35,7 +54,7 @@ julia> @usingany update_pkg = true Qux
 ```
 """
 macro usingany(args...)
-    (;kwargs, last_kwarg_index) = parse_kwargs(args, UsinganyKwargs())
+    (; kwargs, last_kwarg_index) = parse_kwargs(args, UsinganyKwargs())
 
     if 0 + kwargs.update_all + kwargs.update_env + kwargs.update_pkg > 1
         error("multiple update modes cannot be used together.")
@@ -50,7 +69,7 @@ macro usingany(args...)
 
     if isnothing(packages)
         kwargs == UsinganyKwargs() && throw(ArgumentError("No arguments were provided to `@usingany`"))
-        kwargs == UsinganyKwargs(update_pkg=true) && 
+        kwargs == UsinganyKwargs(update_pkg=true) &&
             throw(ArgumentError("No package(s) were provided to `@usingany`, thus no information whicht env to update"))
     end
 
@@ -112,15 +131,15 @@ The macro can be called with boolean keyword arguments:
 This macro is exported.
 """
 macro usinghere(args...)
-    (;kwargs, last_kwarg_index) = parse_kwargs(args, UsinghereKwargs())
-    
+    (; kwargs, last_kwarg_index) = parse_kwargs(args, UsinghereKwargs())
+
     if kwargs.all && kwargs.only
         error("`all=true` and `only=true` cannot be used together.")
     end
 
     lastargs = length(args) - last_kwarg_index
     lastargs != 1 && error(err_msg("@usinghere"))
-    
+
     p = parse_usings(args[end], "@usinghere")
     (; packages, expr) = p
 
@@ -140,14 +159,14 @@ please check the docs of `$(macro_name)` and `make_importable` """
 function parse_usings(x, macro_name)
     # usage like
     # @usingany Foo: bar
-    p = parse_using_functions(x) 
+    p = parse_using_functions(x)
 
     # usage like
     # @usingany Foo, Baz
     isnothing(p) && (p = parse_packages(x))
-  
+
     isnothing(p) && error(err_msg(macro_name))
-    
+
     return p
 end
 
@@ -172,7 +191,7 @@ function parse_colon(x)
     x isa Expr || return nothing
     (x.head == :call && x.args[1] == :(:) && length(x.args) == 3) || return nothing
     pkg = String(x.args[2])
-    fns = fn2string(x.args[3]) 
+    fns = fn2string(x.args[3])
     fns = [fns |> String]
     return (; pkg, fns)
 end
@@ -239,5 +258,5 @@ function parse_kwargs(args, kwargs_struct::AbstractAcceptedKwargs)
         setproperty!(kwargs, kw, val)
         i += 1
     end
-    return (;kwargs, last_kwarg_index=i)
+    return (; kwargs, last_kwarg_index=i)
 end

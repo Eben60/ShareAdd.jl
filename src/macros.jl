@@ -4,6 +4,8 @@ Base.NamedTuple(a::T) where {T<:AbstractAcceptedKwargs} =
     NamedTuple(nm => getfield(a, nm) for nm in fieldnames(T))
 Base.:(==)(a::T, b::T) where {T<:AbstractAcceptedKwargs} = NamedTuple(a) == NamedTuple(b)
 
+trues_count(a::AbstractAcceptedKwargs) = reduce(+, (Tuple ∘ NamedTuple)(a); init=0)
+
 @kwdef mutable struct UsinganyKwargs <: AbstractAcceptedKwargs
     update_pkg::Bool = false
     update_env::Bool = false
@@ -14,8 +16,6 @@ end
     all::Bool = false
     only::Bool = false
 end
-
-
 
 """
     @usingany pkg
@@ -56,7 +56,7 @@ julia> @usingany update_pkg = true Qux
 macro usingany(args...)
     (; kwargs, last_kwarg_index) = parse_kwargs(args, UsinganyKwargs())
 
-    if 0 + kwargs.update_all + kwargs.update_env + kwargs.update_pkg > 1
+    if trues_count(kwargs) > 1
         error("multiple update modes cannot be used together.")
     end
     lastargs = length(args) - last_kwarg_index
@@ -133,7 +133,7 @@ This macro is exported.
 macro usinghere(args...)
     (; kwargs, last_kwarg_index) = parse_kwargs(args, UsinghereKwargs())
 
-    if kwargs.all && kwargs.only
+    if trues_count(kwargs) > 1
         error("`all=true` and `only=true` cannot be used together.")
     end
 

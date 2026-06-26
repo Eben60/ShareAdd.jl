@@ -266,7 +266,7 @@ function prompt2install(new_package::AbstractString, newenvs = String[]; envs = 
     (; options, envs) = prompt2install_preproc(new_package, newenvs, envs, env2exclude; option2del)
     menu = RadioMenu(options)
     isdefined(Main, :VSCodeServer) && @info ide_info maxlog=1
-    @info "Use the arrow keys to move the cursor. Press Enter to select."
+    @info ARROW_KEYS_PROMPT
     println("\n" * "Please select a shared environment to install package $new_package" * "\n")
 
     menu_idx = request(menu)
@@ -402,7 +402,7 @@ function tidyup(env::EnvInfo)
     isnothing(tp) && return nothing
     (; other_pkgs, current_pr, pkg_in_mult_envs, unregistered_pkgs) = tp
 
-    @info "Use the arrow keys to move the cursor. Press Enter to select."
+    @info ARROW_KEYS_PROMPT
     println("\n" * "Please select any packages you would like to KEEP in the environment @$(env.name). " * "\n" *
         "In the following dialogs all other packages will be either " * "\n" *
         "moved into other shared environment(s) or removed ." * "\n")

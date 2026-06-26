@@ -43,6 +43,7 @@ using .AbortableTerminalMenu: AbortableMultiSelectMenu, request
 
 const testfolder_prefix = "z2del-0nzj"
 const IS_TESTING = Ref(false)
+const ARROW_KEYS_PROMPT = "Use the arrow keys to move the cursor. Press Enter to select. Press \"q\" to abort"
 
 
 include("types.jl")

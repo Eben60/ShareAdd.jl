@@ -246,6 +246,6 @@ end
 
 function ask_yes_no(info::AbstractString, opt_yes::AbstractString, opt_no::AbstractString)
     menu = RadioMenu([opt_yes, opt_no])
-    println("Use the arrow keys to move the cursor. Press Enter to select. \n")
+    println(ARROW_KEYS_PROMPT * "\n")
     return request(info, menu, ) == 1
 end

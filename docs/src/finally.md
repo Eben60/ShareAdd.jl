@@ -1,10 +1,17 @@
 ## Changelog
 
+### Release 2.7.0
+
+_2026-07-04_
+
+- New kwarg [`ShareAdd.info(nms; boolean=true)`](@ref), which returns `Union{Bool, Vector{Bool}}`
+- Minor refactoring
+
 ### Release 2.6.0
 
 _2026-06-14_
 
-- Implemented `@usinghere` macro
+- Implemented [`@usinghere`](@ref) macro
 - Extended tests
 - Minor bug fixes
 
@@ -12,7 +19,7 @@ _2026-06-14_
 
 _2026-04-19_ 
 
-- Bug fix: Handle unregistered packages gracefully in `ShareAdd.info(; upgradable=true)` and `ShareAdd.update()`.
+- Bug fix: Handle unregistered packages gracefully in [`ShareAdd.info(; upgradable=true)`](@ref) and [`ShareAdd.update()`](@ref).
 - Bug fix: Was a bug on Julia v1.13 due to a change in a private method in `Pkg`
 - Created AGENTS.md
 

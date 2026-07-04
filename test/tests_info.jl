@@ -15,3 +15,9 @@ dd = Dict("8" => ["c", "e"], "4" => ["b"], "1" => ["a", "e"], "5" => ["b", "c"],
 @test isempty(list_shared_envs("Pkg"))
 @test list_shared_envs("Pkg"; std_lib = true) == ["stdlib"]
 @test !is_package()
+
+@test_throws ErrorException ShareAdd.info(; boolean=true)
+@test ShareAdd.info("Test"; boolean=true) == true
+@test ShareAdd.info("SomeUnknownPackage9999"; boolean=true) == false
+@test ShareAdd.info(["Test", "SomeUnknownPackage9999"]; boolean=true) == [true, false]
+@test ShareAdd.info(["SomeUnknownPackage9999", "Test"]; boolean=true) == [false,true]

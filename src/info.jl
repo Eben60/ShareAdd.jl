@@ -1,6 +1,6 @@
 """
     info(nms::Union{Nothing, String, Vector{String}} = nothing; 
-        by_env=true, listing=nothing, std_lib=false, upgradable=false, disp_rslt=true, ret_rslt=false)
+        by_env=true, listing=nothing, std_lib=false, upgradable=false, disp_rslt=true, ret_rslt=false, boolean=false)
 
 Prints out and/or returns information about shared environments.
 
@@ -14,6 +14,7 @@ Prints out and/or returns information about shared environments.
 - `upgradable=false`: if true, all other kwargs will be ignored, and only upgradable packages with installed vs. most recent versions will be printed, ordered by environment. 
 - `disp_rslt=true`: whether to print out results.
 - `ret_rslt=false`: whether the function returns anything. If set to `true`, it returns a NamedTuple `(; env_dict, pkg_dict, envs, pkgs, absent)`, where the two first elements are  `Dict`s with keywords correspondingly by env or by pkg; `envs` and `pkgs` are vectors of  respective elements, and `absent` are those names provided through the `nms` argument, which  are not contained in the shared envs. Names of envs in the returned data are without leading "@".
+- `boolean=false`: if `true`, ignores other kwargs (forces `std_lib=true` and `disp_rslt=false`), and returns a `Bool` or `Vector{Bool}` indicating whether the provided package(s) or environment(s) are available. Calling with `boolean=true` but without `nms` errors.
 
 This function is public, but **not exported**, as to avoid possible name conflicts. 
 
@@ -40,13 +41,27 @@ julia> ShareAdd.info("StaticArrays"; upgradable=true)
     StaticArrays: 1.9.8 --> 1.9.10   
 ```
 """
-info(nm::AbstractString; kwargs...) = info([nm]; kwargs...)
+function info(nm::AbstractString; kwargs...)
+    res = info([nm]; kwargs...)
+    if get(kwargs, :boolean, false)
+        return res[1]
+    end
+    return res
+end
 
-function info(nms=nothing; by_env=true, listing=nothing, std_lib=false, upgradable=false, disp_rslt=true, ret_rslt=false)
+function info(nms=nothing; by_env=true, listing=nothing, std_lib=false, upgradable=false, disp_rslt=true, ret_rslt=false, boolean=false)
+    if boolean
+        isnothing(nms) && error("Cannot use `boolean=true` without providing `nms`.")
+        std_lib = true
+        disp_rslt = false
+    end
+
     are_env_names = nothing
+    local orig_nms_stripped = nothing
     if !isnothing(nms)
         all_same_art(nms) || error("List of names must be either all environments or all packages")
         are_env_names = startswith(nms[1], "@")
+        orig_nms_stripped = are_env_names ? [n[2:end] for n in nms] : copy(nms)
         sort!(nms)
     end    
 
@@ -54,6 +69,10 @@ function info(nms=nothing; by_env=true, listing=nothing, std_lib=false, upgradab
     env_dict0 = Dict{String, Vector{String}}(k => (e.pkgs |> collect |> sort) for (k, e) in shared_envs)
 
     (; env_dict, pkg_dict, absent) = dict_for_names(env_dict0, nms, are_env_names)
+
+    if boolean
+        return Bool[!(n in absent) for n in orig_nms_stripped]
+    end
 
     if upgradable
         print_absent(absent, are_env_names)

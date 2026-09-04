@@ -1,20 +1,37 @@
 """
     info(nms::Union{Nothing, String, Vector{String}} = nothing; 
-        by_env=true, listing=nothing, std_lib=false, upgradable=false, disp_rslt=true, ret_rslt=false, boolean=false)
+        by_env::Bool=true, listing=nothing, std_lib::Bool=false, upgradable::Bool=false, version::Bool=false, disp_rslt::Bool=true, ret_rslt::Bool=false, boolean::Bool=false) -> Union{Nothing, Bool, Vector{Bool}, NamedTuple}
 
 Prints out and/or returns information about shared environments.
 
-# Argument
-- `nms`: Name(s) of package(s) or environment(s) to return the information on. Environment names must start with "@". Package and env names cannot be provided together in one array.
+# Arguments
+- `nms::Union{Nothing, String, Vector{String}}=nothing`: Name(s) of package(s) or environment(s) to return the information on. Environment names must start with "@". Package and env names cannot be provided together in one array.
 
-# Keyword arguments
-- `by_env=true`: whether to print out results as a `Dict` of pairs like `@env => [pkg1, ...]`, or `pkg => [@env1, ...]`. Has no effect on returned (if any) results.
-- `listing=nothing`: this kwarg can be `nothing`, `:envs`, or `:pkgs`. If one of these two `Symbol`s is provided, the result is printed as a vector of envs or pkgs, resp. In this case `by_env` is ignored. Has no effect on returned (if any) results
-- `std_lib=false`: if true, info on standard library also returned.
-- `upgradable=false`: if true, all other kwargs will be ignored, and only upgradable packages with installed vs. most recent versions will be printed, ordered by environment. 
-- `disp_rslt=true`: whether to print out results.
-- `ret_rslt=false`: whether the function returns anything. If set to `true`, it returns a NamedTuple `(; env_dict, pkg_dict, envs, pkgs, absent)`, where the two first elements are  `Dict`s with keywords correspondingly by env or by pkg; `envs` and `pkgs` are vectors of  respective elements, and `absent` are those names provided through the `nms` argument, which  are not contained in the shared envs. Names of envs in the returned data are without leading "@".
-- `boolean=false`: if `true`, ignores other kwargs (forces `std_lib=true` and `disp_rslt=false`), and returns a `Bool` or `Vector{Bool}` indicating whether the provided package(s) or environment(s) are available. Calling with `boolean=true` but without `nms` errors.
+# Keyword Arguments
+- `by_env::Bool=true`: whether to print out results as a `Dict` of pairs like `@env => [pkg1, ...]`, or `pkg => [@env1, ...]`. Has no effect on returned (if any) results.
+- `listing::Union{Nothing, Symbol}=nothing`: this kwarg can be `nothing`, `:envs`, or `:pkgs`. If one of these two `Symbol`s is provided, the result is printed as a vector of envs or pkgs, resp. In this case `by_env` is ignored. Has no effect on returned (if any) results
+- `std_lib::Bool=false`: if true, info on standard library also returned.
+- `upgradable::Bool=false`: if true, all other kwargs will be ignored (unless `version=true`), and only upgradable packages with installed vs. most recent versions will be printed, ordered by environment.
+- `version::Bool=false`: if true, displays the installed versions of the packages. It requires `by_env=true` and `listing=nothing`, and errors if conflicting values are passed.
+- `disp_rslt::Bool=true`: whether to print out results.
+- `ret_rslt::Bool=false`: whether the function returns anything.
+- `boolean::Bool=false`: if `true`, ignores other kwargs (forces `std_lib=true` and `disp_rslt=false`), and returns a `Bool` or `Vector{Bool}` indicating whether the provided package(s) or environment(s) are available. Calling with `boolean=true` but without `nms` errors.
+
+# Returns
+- `Nothing`: Returned by default if `ret_rslt=false` and `boolean=false` (or if `upgradable=true` and `version=false` even if `ret_rslt=true`).
+- `Union{Bool, Vector{Bool}}`: Returned if `boolean=true`. Indicates whether the provided package(s) or environment(s) are available.
+- `NamedTuple`: Returned if `ret_rslt=true`. The structure depends on the provided keyword arguments:
+  - Default: `(; env_dict, pkg_dict, envs, pkgs, absent)`
+  - With `version=true`: `(; env_dict, pkg_dict, envs, pkgs, absent, installed_versions)`
+  - With `version=true` and `upgradable=true`: `(; env_dict, pkg_dict, envs, pkgs, absent, installed_versions, latest_versions)`
+  
+  The structures of the elements in the `NamedTuple` are:
+  - `env_dict::Dict{String, Vector{String}}`: mappings from env name (without "@") to packages.
+  - `pkg_dict::Dict{String, Vector{String}}`: mappings from package to env names.
+  - `envs::Vector{String}`, `pkgs::Vector{String}`: sorted vectors of environments and packages.
+  - `absent::Vector{String}`: names provided through the `nms` argument which are not contained in the shared envs.
+  - `installed_versions::Dict{String, Dict{String, VersionNumber}}`: mappings of `pkg => env => version`.
+  - `latest_versions::Dict{String, VersionNumber}`: mappings of `pkg => latest registry version`.
 
 This function is public, but **not exported**, as to avoid possible name conflicts. 
 
@@ -38,7 +55,12 @@ julia> ShareAdd.info(["DataFrames", "CSV"]; by_env=false)
 
 julia> ShareAdd.info("StaticArrays"; upgradable=true)
   @StaticArrays
-    StaticArrays: 1.9.8 --> 1.9.10   
+    StaticArrays: 1.9.8 --> 1.9.10
+
+
+julia> ShareAdd.info("StaticArrays"; version=true)
+  @StaticArrays
+    StaticArrays: 1.9.8  
 ```
 """
 function info(nm::AbstractString; kwargs...)
@@ -49,11 +71,16 @@ function info(nm::AbstractString; kwargs...)
     return res
 end
 
-function info(nms=nothing; by_env=true, listing=nothing, std_lib=false, upgradable=false, disp_rslt=true, ret_rslt=false, boolean=false)
+function info(nms=nothing; by_env=true, listing=nothing, std_lib=false, upgradable=false, version=false, disp_rslt=true, ret_rslt=false, boolean=false)
     if boolean
         isnothing(nms) && error("Cannot use `boolean=true` without providing `nms`.")
         std_lib = true
         disp_rslt = false
+        version = false
+    elseif version
+        if !by_env || !isnothing(listing)
+            error("When `version=true` is used, `by_env` must be `true` and `listing` must be `nothing`.")
+        end
     end
 
     are_env_names = nothing
@@ -74,23 +101,61 @@ function info(nms=nothing; by_env=true, listing=nothing, std_lib=false, upgradab
         return Bool[!(n in absent) for n in orig_nms_stripped]
     end
 
-    if upgradable
+    installed_versions = nothing
+    latest_versions = nothing
+
+    if version
+        installed_versions = Dict{String, Dict{String, VersionNumber}}()
+        all_pkgs = keys(pkg_dict) |> collect
+        
+        for (nm, env) in shared_envs
+            haskey(env_dict, nm) || continue
+            
+            specific_pkgs = intersect(all_pkgs, env.pkgs)
+            installed_v = pkg_version(env, specific_pkgs)
+            for (pkg, v) in installed_v
+                isnothing(v) && continue
+                if !haskey(installed_versions, pkg)
+                    installed_versions[pkg] = Dict{String, VersionNumber}()
+                end
+                installed_versions[pkg][nm] = v
+            end
+        end
+        
+        if upgradable
+            registered_pkgs = filter(p -> is_registered(p), all_pkgs)
+            unregistered_pkgs = setdiff(all_pkgs, registered_pkgs)
+            if !isempty(unregistered_pkgs)
+                sort!(unregistered_pkgs)
+                @info "The following packages are not registered and cannot be checked for updates: $unregistered_pkgs"
+            end
+            latest_versions = latest_version(registered_pkgs)
+        end
+        
+        disp_rslt && display_versions_and_upgradable(env_dict, installed_versions, latest_versions, absent, are_env_names)
+    elseif upgradable
         print_absent(absent, are_env_names)
         if (!by_env || std_lib || !isnothing(listing) || !disp_rslt || ret_rslt)
             @warn "With `upgradable` kwarg, all other kwargs are ignored"
         end
         return display_upgradable(shared_envs, env_dict, pkg_dict)
+    else
+        d = by_env ? env_dict : pkg_dict
+        disp_rslt && display_results(d, absent, are_env_names, by_env, listing)
     end
-
-    d = by_env ? env_dict : pkg_dict
-
-    disp_rslt && display_results(d, absent, are_env_names, by_env, listing)
 
     ret_rslt || return nothing
     
     envs = keys(env_dict) |> collect |> sort!
     pkgs = keys(pkg_dict) |> collect |> sort!
-    return (; env_dict, pkg_dict, envs, pkgs, absent)
+    
+    if version && upgradable
+        return (; env_dict, pkg_dict, envs, pkgs, absent, installed_versions, latest_versions)
+    elseif version
+        return (; env_dict, pkg_dict, envs, pkgs, absent, installed_versions)
+    else
+        return (; env_dict, pkg_dict, envs, pkgs, absent)
+    end
 end
 
 function display_results(d, absent, are_env_names, by_env, listing)
@@ -102,6 +167,32 @@ function display_results(d, absent, are_env_names, by_env, listing)
             println()
             println("Found pkgs/envs:")
             print_dict(d; by_env, listing)
+        end
+    end
+    return nothing
+end
+
+function display_versions_and_upgradable(env_dict, installed_versions, latest_versions, absent, are_env_names)
+    print_absent(absent, are_env_names)
+    if !isempty(env_dict)
+        !isempty(absent) && println()
+        println("Found pkgs/envs:")
+        sorted_envs = keys(env_dict) |> collect |> sort!
+        for env in sorted_envs
+            println("  @$env")
+            pkgs = env_dict[env] |> sort
+            for pkg in pkgs
+                v = get(get(installed_versions, pkg, Dict()), env, nothing)
+                if !isnothing(v)
+                    if !isnothing(latest_versions) && haskey(latest_versions, pkg) && v < latest_versions[pkg]
+                        println("    $pkg: $v --> $(latest_versions[pkg])")
+                    else
+                        println("    $pkg: $v")
+                    end
+                else
+                    println("    $pkg: not found in manifest")
+                end
+            end
         end
     end
     return nothing

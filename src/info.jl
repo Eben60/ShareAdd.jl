@@ -37,7 +37,16 @@ This function is public, but **not exported**, as to avoid possible name conflic
 
 # Examples
 ```julia-repl
-julia> ShareAdd.info(["BenchmarkTools", "Chairmarks"])
+julia> info();
+  @BenchmarkTools
+   => ["BenchmarkTools"]
+  @DataFrames
+   => ["CSV", "DataFrames", "Missings", "StringEncodings"]
+ ...
+  @v1.12
+   => ["BasicAutoloads", "Revise", "ShareAdd", "TerminalPager"]
+
+julia> ShareAdd.info(["BenchmarkTools", "Chairmarks"]);
 The following packages are not in any shared env:
     ["Chairmarks"]
 
@@ -47,20 +56,22 @@ Found pkgs/envs:
   @Tools
    => ["BenchmarkTools"]
 
-julia> ShareAdd.info(["DataFrames", "CSV"]; by_env=false)
+julia> ShareAdd.info(["DataFrames", "CSV"]; by_env=false);
   CSV
    => ["@DataFrames"]
   DataFrames
    => ["@DataFrames"]
 
-julia> ShareAdd.info("StaticArrays"; upgradable=true)
+julia> ShareAdd.info("StaticArrays"; upgradable=true);
   @StaticArrays
     StaticArrays: 1.9.8 --> 1.9.10
 
-
-julia> ShareAdd.info("StaticArrays"; version=true)
+julia> ShareAdd.info("StaticArrays"; version=true);
   @StaticArrays
-    StaticArrays: 1.9.8  
+    StaticArrays: 1.9.8
+
+julia> typeof(ShareAdd.info("DataFrames"; boolean=true))
+Bool
 ```
 """
 function info(nm::AbstractString; kwargs...)

@@ -1,5 +1,11 @@
 ## Changelog
 
+### Release 2.8.0
+
+_2026-07-04_
+
+- New kwarg [`ShareAdd.info(; version=true)`](@ref), which prints/returns installed package versions
+
 ### Release 2.7.0
 
 _2026-07-04_

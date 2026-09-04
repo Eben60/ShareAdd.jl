@@ -139,6 +139,26 @@ create_project(e2, [fp1, fp2, fp3])
     @test is_shared_environment("@$(e4.name)")
     @test e1.name in list_shared_envs()
 
+    # Test version=true combined with ret_rslt=true
+    (; installed_versions) = info("@$(e4.name)"; version=true, disp_rslt=false, ret_rslt=true)
+    @test installed_versions == Dict("ShareAdd" => Dict(e4.name => v"2.0.0"))
+
+    # Test version=true and upgradable=true combined with ret_rslt=true
+    (; installed_versions, latest_versions) = info("@$(e4.name)"; version=true, upgradable=true, disp_rslt=false, ret_rslt=true)
+    @test installed_versions["ShareAdd"] == Dict(e4.name => v"2.0.0")
+    @test haskey(latest_versions, "ShareAdd") && latest_versions["ShareAdd"] >= v"2.0.0"
+
+    # Test error conditions
+    @test_throws ErrorException info(; version=true, by_env=false)
+    @test_throws ErrorException info(; version=true, listing=:pkgs)
+
+    # Test console output
+    info_version = @capture_out begin
+        info("@$(e4.name)"; version=true)
+    end
+    s9 = "  @$(e4.name)\n    ShareAdd: 2.0.0"
+    @test occursin(s9, info_version)
+
 end
 
 @testset "EnvInfo" begin

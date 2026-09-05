@@ -12,4 +12,5 @@ makedocs(
         ],
     checkdocs = :exports, 
     warnonly = [:missing_docs],
+    debug = debug,
 )

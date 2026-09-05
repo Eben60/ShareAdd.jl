@@ -1,3 +1,5 @@
+debug = false
+
 include("makedocs.jl")
 ;
 

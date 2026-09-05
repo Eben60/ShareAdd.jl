@@ -63,7 +63,7 @@ This macro makes package(s) available, if they are not already, and loads them w
 @usingany SomePackage
 ```
 
-For more usage options see [`@usingany` docs](@ref) .
+For more usage options see [`@usingany`](@ref) docs.
 
 ### `@usingany` usage example
 

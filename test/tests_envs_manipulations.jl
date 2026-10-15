@@ -238,17 +238,49 @@ end
 
 @testset "update" begin
     @suppress begin
-    using ShareAdd: update
-    @test_throws Pkg.Types.PkgError update(fp3.name)
-    @test_throws Pkg.Types.PkgError update("@$(e2.name)") 
+    using ShareAdd: update, with_update_tracking, record_update_error!, TASK_KEY_FAILED_UPDATES
+    @test_logs (:warn, Regex("Error updating environment @$(e2.name).*$(fp3.name)")) match_mode=:any update(fp3.name)
+    @test_logs (:warn, Regex("Error updating environment @$(e2.name)")) match_mode=:any update("@$(e2.name)") 
+    @test_logs (:warn, r"Update encountered errors.*1 target"s) match_mode=:any update("@$(e2.name)") 
 
+    # Exactly one summary warning for multi-target calls (no duplicate summaries)
+    logs_multi, _ = Test.collect_test_logs() do
+        update(["@$(e2.name)", "@$(e2.name)"])
+    end
+    summary_logs = filter(l -> l.level == Base.CoreLogging.Warn && occursin(r"Update encountered errors", l.message), logs_multi)
+    @test length(summary_logs) == 1
+    @test occursin("1 target", summary_logs[1].message)
+    @test occursin("@$(e2.name)", summary_logs[1].message)
+
+    # No summary warning on successful execution
+    logs_success, _ = Test.collect_test_logs() do
+        with_update_tracking() do
+            # Successful execution without errors
+        end
+    end
+    @test !any(l -> occursin(r"Update encountered errors", l.message), logs_success)
+
+    # Cleanup after an exception: task-local storage key must not leak
+    @test !haskey(task_local_storage(), TASK_KEY_FAILED_UPDATES)
+    try
+        with_update_tracking() do
+            record_update_error!("simulated_failure")
+            error("simulated crash")
+        end
+    catch
+    end
+    @test !haskey(task_local_storage(), TASK_KEY_FAILED_UPDATES)
+    @test_throws AssertionError record_update_error!("outside_tracking")
 
     @test_logs (:warn, r"Package Fake_roj1 not found") match_mode=:any update("Fake_roj1"; warn_if_missing=true)
     @test_logs (:warn, r"are not in the environment") match_mode=:any update("@$(e2.name)", "Fake_roj1"; warn_if_missing=true)
 
-    if VERSION >= v"1.11" # worked on 1.11 but throws on 1.10 and may throw on 1.12
-        u = update("@$(e4.name)" => "ShareAdd")
+    if VERSION >= v"1.11" # worked on 1.11 but throws on 1.10
+        logs_success_env, u = Test.collect_test_logs() do
+            update("@$(e4.name)" => "ShareAdd")
+        end
         @test isnothing(u)
+        @test !any(l -> occursin(r"Update encountered errors", l.message), logs_success_env)
     end
 
     end # @suppress

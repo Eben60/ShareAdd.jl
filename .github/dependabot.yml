@@ -12,11 +12,24 @@ updates:
   - package-ecosystem: "julia"
     directories:
       - "/"
-      - "/docs"
-      - "/test"
     schedule:
       interval: "weekly"
     groups:
       all-julia-packages:
         patterns:
           - "*"
+
+  - package-ecosystem: "julia"
+    directory: "/docs"
+    schedule:
+      interval: "monthly"
+    ignore:
+      - dependency-name: "*"
+
+  - package-ecosystem: "julia"
+    directory: "/test"
+    schedule:
+      interval: "monthly"
+    ignore:
+      - dependency-name: "*"
+    

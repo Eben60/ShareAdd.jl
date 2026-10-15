@@ -1,0 +1,148 @@
+     Testing ShareAdd
+      Status `/private/var/folders/hp/9477brx96gn8fht6qvpvhlrw0000gn/T/jl_AcfsVQ/Project.toml`
+  [4c88cf16] Aqua v0.8.18
+  [a2441757] Coverage v1.8.2
+  [1bc83da4] SafeTestsets v0.1.0
+  [27c01619] ShareAdd v2.9.0 `~/Julia/1-Registered-Packages/ShareAdd.jl`
+  [fd094767] Suppressor v0.2.8
+  [44cfe95a] Pkg v1.13.0
+  [9a3f8284] Random v1.11.0
+  [fa267f1f] TOML v1.0.3
+  [8dfed614] Test v1.11.0
+      Status `/private/var/folders/hp/9477brx96gn8fht6qvpvhlrw0000gn/T/jl_AcfsVQ/Manifest.toml`
+  [4c88cf16] Aqua v0.8.18
+  [c7e460c6] ArgParse v1.2.0
+  [d1d4a3ce] BitFlags v0.1.10
+  [944b1d66] CodecZlib v0.7.9
+  [34da2185] Compat v4.18.1
+  [f0e56b4a] ConcurrentUtilities v2.7.1
+  [a2441757] Coverage v1.8.2
+  [c36e975a] CoverageTools v1.4.2
+  [460bff9d] ExceptionUnwrapping v0.1.12
+⌅ [cd3eb016] HTTP v1.11.0
+  [692b3bcd] JLLWrappers v1.8.0
+  [682c06a0] JSON v1.11.0
+  [70703baa] JuliaSyntax v1.0.2
+  [e6f89c97] LoggingExtras v1.2.0
+  [739be429] MbedTLS v1.1.10
+  [4d8831e6] OpenSSL v1.7.0
+  [69de0a69] Parsers v3.0.0
+  [aea7be01] PrecompileTools v1.3.4
+  [21216c6a] Preferences v1.6.0
+  [1bc83da4] SafeTestsets v0.1.0
+  [6c6a2e73] Scratch v1.3.0
+  [27c01619] ShareAdd v2.9.0 `~/Julia/1-Registered-Packages/ShareAdd.jl`
+  [777ac1f9] SimpleBufferStream v1.2.0
+  [ec057cc2] StructUtils v2.10.0
+  [fd094767] Suppressor v0.2.8
+  [b718987f] TextWrap v1.0.2
+  [3bb67fe8] TranscodingStreams v0.11.3
+  [5c2747f8] URIs v1.7.1
+  [c8ffd9c3] MbedTLS_jll v2.28.1010+0
+  [0dad84c5] ArgTools v1.1.2
+  [56f22d72] Artifacts v1.11.0
+  [2a0f44e3] Base64 v1.11.0
+  [ade2ca70] Dates v1.11.0
+  [f43a241f] Downloads v1.7.0
+  [7b1f6079] FileWatching v1.11.0
+  [b77e0a4c] InteractiveUtils v1.11.0
+  [ac6e5ff7] JuliaSyntaxHighlighting v1.12.0
+  [b27032c2] LibCURL v1.0.0
+  [76f85450] LibGit2 v1.11.0
+  [8f399da3] Libdl v1.11.0
+  [56ddb016] Logging v1.11.0
+  [d6f4376e] Markdown v1.11.0
+  [ca575930] NetworkOptions v1.3.0
+  [44cfe95a] Pkg v1.13.0
+  [de0858da] Printf v1.11.0
+  [3fa0cd96] REPL v1.11.0
+  [9a3f8284] Random v1.11.0
+  [ea8e919c] SHA v1.0.0
+  [9e88b42a] Serialization v1.11.0
+  [6462fe0b] Sockets v1.11.0
+  [f489334b] StyledStrings v1.11.0
+  [fa267f1f] TOML v1.0.3
+  [a4e569a6] Tar v1.10.0
+  [8dfed614] Test v1.11.0
+  [cf7118a7] UUIDs v1.11.0
+  [4ec0a83e] Unicode v1.11.0
+  [e66e0078] CompilerSupportLibraries_jll v1.5.5+2
+  [deac9b47] LibCURL_jll v8.22.0+0
+  [e37daf67] LibGit2_jll v1.9.7+0
+  [29816b5a] LibSSH2_jll v1.11.104+0
+  [14a3606d] MozillaCACerts_jll v2026.8.13
+  [458c3c95] OpenSSL_jll v3.5.8+0
+  [efcefdf7] PCRE2_jll v10.46.0+0
+  [83775a58] Zlib_jll v1.3.2+0
+  [3161d3a3] Zstd_jll v1.5.7+1
+  [8e850ede] nghttp2_jll v1.70.0+0
+  [3f19e933] p7zip_jll v17.8.3+0
+        Info Packages marked with ⌅ have new versions available but compatibility constraints restrict them from upgrading.
+     Testing Running tests...
+  Activating project at `~/.julia/environments/z2del-0nzjkprdrre6q5`
+    Updating registry at `~/.julia/registries/General.toml`
+  Activating project at `/var/folders/hp/9477brx96gn8fht6qvpvhlrw0000gn/T/jl_AcfsVQ`
+ERROR: LoadError: Some tests did not pass: 93 passed, 1 failed, 0 errored, 0 broken.
+in expression starting at /Users/elk/Julia/1-Registered-Packages/ShareAdd.jl/test/runtests.jl:26
+Test Summary: | Pass  Total  Time
+Aqua          |   11     11  4.0s
+Test Summary: | Pass  Total  Time
+optimset      |   11     11  0.2s
+Test Summary: | Pass  Total  Time
+registries    |    2      2  0.0s
+Test Summary: | Pass  Total  Time
+current_env   |    2      2  0.0s
+Test Summary:  | Pass  Total  Time
+check_packages |   13     13  0.1s
+Test Summary:    | Pass  Total  Time
+is_minor_version |    4      4  0.0s
+Test Summary:       | Pass  Total  Time
+locate_project_file |    8      8  0.1s
+Test Summary: | Pass  Total  Time
+workspace     |   60     60  0.7s
+Test Summary:   | Pass  Total  Time
+stdlib_packages |    2      2  0.0s
+Test Summary:   | Pass  Total  Time
+usingany_throws |    2      2  0.0s
+Test Summary:   | Pass  Total  Time
+usingany_kwargs |   26     26  1.2s
+Test Summary: | Pass  Total  Time
+info          |   14     14  0.9s
+Test Summary: | Pass  Total  Time
+reset         |    1      1  0.0s
+Test Summary:           | Pass  Fail  Total  Time
+Env Manipulations       |   93     1     94  6.0s
+  InfoExtended          |   40           40  0.2s
+  EnvInfo               |   24           24  0.8s
+  sh_add                |    2            2  0.0s
+  update                |   13     1     14  3.2s
+  unregistered packages |    4            4  0.3s
+  delete_env            |    7            7  0.3s
+  temporary_env         |    2            2  0.0s
+RNG of the outermost testset: Random.Xoshiro(0x087c2bdcf6652d59, 0xf5a8f4a87d0b41c7, 0xf23b9b7c4a53fc6f, 0x4faaf174395a62d0, 0xd24dad7172a39489)
+ERROR: Package ShareAdd errored during testing
+Stacktrace:
+  [1] pkgerror(msg::String)
+    @ Pkg.Types ~/.julia/juliaup/julia-1.13.2+0.aarch64.apple.darwin14/Julia-1.13.app/Contents/Resources/julia/share/julia/stdlib/v1.13/Pkg/src/Types.jl:68
+  [2] test(ctx::Pkg.Types.Context, pkgs::Vector{PackageSpec}; coverage::Bool, julia_args::Cmd, test_args::Cmd, test_fn::Nothing, force_latest_compatible_version::Bool, allow_earlier_backwards_compatible_versions::Bool, allow_reresolve::Bool)
+    @ Pkg.Operations ~/.julia/juliaup/julia-1.13.2+0.aarch64.apple.darwin14/Julia-1.13.app/Contents/Resources/julia/share/julia/stdlib/v1.13/Pkg/src/Operations.jl:3319
+  [3] test
+    @ ~/.julia/juliaup/julia-1.13.2+0.aarch64.apple.darwin14/Julia-1.13.app/Contents/Resources/julia/share/julia/stdlib/v1.13/Pkg/src/Operations.jl:3197 [inlined]
+  [4] test(ctx::Pkg.Types.Context, pkgs::Vector{PackageSpec}; coverage::Bool, test_fn::Nothing, julia_args::Cmd, test_args::Cmd, force_latest_compatible_version::Bool, allow_earlier_backwards_compatible_versions::Bool, allow_reresolve::Bool, kwargs::@Kwargs{io::IOContext{IO}})
+    @ Pkg.API ~/.julia/juliaup/julia-1.13.2+0.aarch64.apple.darwin14/Julia-1.13.app/Contents/Resources/julia/share/julia/stdlib/v1.13/Pkg/src/API.jl:587
+  [5] test(pkgs::Vector{PackageSpec}; io::IOContext{IO}, kwargs::@Kwargs{})
+    @ Pkg.API ~/.julia/juliaup/julia-1.13.2+0.aarch64.apple.darwin14/Julia-1.13.app/Contents/Resources/julia/share/julia/stdlib/v1.13/Pkg/src/API.jl:172
+  [6] test(pkgs::Vector{PackageSpec})
+    @ Pkg.API ~/.julia/juliaup/julia-1.13.2+0.aarch64.apple.darwin14/Julia-1.13.app/Contents/Resources/julia/share/julia/stdlib/v1.13/Pkg/src/API.jl:161
+  [7] test(; name::Nothing, uuid::Nothing, version::Nothing, url::Nothing, rev::Nothing, path::Nothing, mode::PackageMode, subdir::Nothing, kwargs::@Kwargs{})
+    @ Pkg.API ~/.julia/juliaup/julia-1.13.2+0.aarch64.apple.darwin14/Julia-1.13.app/Contents/Resources/julia/share/julia/stdlib/v1.13/Pkg/src/API.jl:189
+  [8] test()
+    @ Pkg.API ~/.julia/juliaup/julia-1.13.2+0.aarch64.apple.darwin14/Julia-1.13.app/Contents/Resources/julia/share/julia/stdlib/v1.13/Pkg/src/API.jl:178
+  [9] top-level scope
+    @ none:1
+ [10] eval(m::Module, e::Any)
+    @ Core ./boot.jl:489
+ [11] exec_options(opts::Base.JLOptions)
+    @ Base ./client.jl:310
+ [12] _start()
+    @ Base ./client.jl:577

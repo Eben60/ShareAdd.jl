@@ -1,8 +1,14 @@
 ## Changelog
 
+### Release 2.8.1
+
+_2026-10-16_
+
+- [`ShareAdd.update`](@ref), when encountering update error, instead of throwing and stopping, now will produce a warning and then continue updating other packages/environments
+
 ### Release 2.8.0
 
-_2026-07-04_
+_2026-09-05_
 
 - New kwarg [`ShareAdd.info(; version=true)`](@ref), which prints/returns installed package versions
 

@@ -79,8 +79,9 @@ and adds relevant shared environments to `LOAD_PATH`.
 if you e.g. want to import a package via `import` statement instead of `using`.
 
 Returns `:success` if the operation was successful, and `nothing` if the user selected "Quit. Do Nothing." on any of the prompts.
+When installing packages, `make_importable` creates or maintains a versioned manifest in each target environment (see [`make_current_mnf`](@ref)).
 
-Throws an error on unavailable packages.
+Throws an error on unavailable packages, or if missing packages require installation in a non-interactive session.
 
 # Examples
 ```julia-repl
@@ -105,11 +106,18 @@ function make_importable(packages)
     isempty(unavailable_pkgs) || error("The following packages are not available from any registry: $unavailable_pkgs")
 
     if !isempty(installable_pkgs) 
+        isinteractive() || error(
+            "The following packages are not available from any environment: $installable_pkgs. " *
+            "In a non-interactive session, there is no dialog to install them. " *
+            "Run `@usingany` once in an interactive session, or install the packages manually, e.g. via `Pkg.add`.")
+
         p2i = prompt2install(installable_pkgs, )
 
         isnothing(p2i) && return nothing
 
-        install_shared(p2i, current_pr) 
+        with_update_tracking() do
+            install_shared(p2i, current_pr)
+        end
 
         (; inshared_pkgs, installable_pkgs, unavailable_pkgs, shared_pkgs, current_pr) = check_packages(packages)
         isempty(unavailable_pkgs) || error("The following packages are not available from any registry: $unavailable_pkgs")
@@ -146,18 +154,42 @@ end
 
 make_importable(::Nothing) = :success
 
+
+
+"""
+    install_shared(p2is::AbstractVector{<:NamedTuple}, current_pr::EnvInfo) -> Nothing
+    install_shared(env::Union{EnvInfo, AbstractString}, pkgs::Vector{String}) -> Nothing
+
+Install packages into designated shared or project environments.
+
+- When called with `p2is`, groups packages by environment, installs each group,
+  and restores `current_pr` upon completion.
+- When called with `env`, activates the environment, prepares its versioned manifest
+  if applicable, and installs `pkgs`. Standard environments (e.g. `@v1.11`) are
+  skipped from versioned manifest generation.
+"""
 function install_shared(p2is::AbstractVector{<:NamedTuple}, current_pr::EnvInfo)
     d = combine4envs(p2is)
-    for (env, pkgs) in d
-        env == ENV_NULL || install_shared(env, pkgs)
+    try
+        for (env, pkgs) in d
+            env == ENV_NULL && continue
+            try
+                install_shared(env, pkgs)
+            catch e
+                e isa InterruptException && rethrow()
+                @warn "Failed to install $(pkgs) into $(env_info2show(env))" exception=e
+            end
+        end
+    finally
+        Pkg.activate(current_pr.path)
     end
-    Pkg.activate(current_pr.path)
     return nothing
 end
 
 function install_shared(env, pkgs::Vector{String})
+    is_stdenv = env isa EnvInfo ? env.standard_env : (lstrip(env, '@') == main_env_name(false))
     if env isa EnvInfo
-        if env.standard_env
+        if is_stdenv
             env2activate = ""
         elseif env.shared
             env2activate = "@" * env.name
@@ -168,8 +200,9 @@ function install_shared(env, pkgs::Vector{String})
         env2activate = env
     end
 
-    if isempty(env2activate) 
+    if is_stdenv 
         Pkg.activate()
+        Pkg.add(pkgs)
     else
         if startswith(env2activate, "@")
             shared = true
@@ -178,9 +211,12 @@ function install_shared(env, pkgs::Vector{String})
             shared = false
         end
         Pkg.activate(env2activate; shared)
+        env_dir = dirname(Base.active_project())
+        mkpath(env_dir) # a new shared env may not exist yet
+        with_versioned_mnf(env_dir) do
+            Pkg.add(pkgs)
+        end
     end
-
-    Pkg.add(pkgs)
 
     return nothing
 end

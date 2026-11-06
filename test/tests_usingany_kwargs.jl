@@ -94,7 +94,7 @@ end
 
         # Check the Manifest again to ensure the version actually increased
         # Account for versioned manifests.
-        mnf_path = ShareAdd.current_mnf(env_path)
+        mnf_path = ShareAdd.active_mnf_path(env_path)
         mnf_after = TOML.parsefile(mnf_path)
         ver_after = VersionNumber(mnf_after["deps"]["Example"][1]["version"])
         

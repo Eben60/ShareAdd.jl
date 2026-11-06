@@ -410,6 +410,7 @@ pkg_version(envname::AbstractString; manifest = nothing) = pkg_version(EnvInfo(e
 
 function get_manifest(env::EnvInfo; manifest = nothing)
     isnothing(manifest) || return manifest
-    manifile = make_current_mnf(env)
+    manifile = active_mnf_path(env.path)
+    isnothing(manifile) && return Dict{String, Any}()
     return TOML.parsefile(manifile)
 end

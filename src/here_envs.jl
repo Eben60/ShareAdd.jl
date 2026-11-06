@@ -37,7 +37,11 @@ function activate_here(source_file, packages; all::Bool=false, only::Bool=false)
         end
 
         Pkg.activate(target_dir)
-        Pkg.add(missing_pkgs)
+        with_update_tracking() do
+            with_versioned_mnf(target_dir) do
+                Pkg.add(missing_pkgs)
+            end
+        end
     end
     return nothing
 end

@@ -1,6 +1,20 @@
 ## Changelog
 
-### Release 2.8.1
+### Release 2.10.0 (Draft)
+
+_unreleased_
+
+- Versioned manifests (`Manifest-vX.Y.toml`) are now created and maintained when installing packages via [`@usingany`](@ref), [`@usinghere`](@ref), [`ShareAdd.make_importable`](@ref), and [`ShareAdd.tidyup`](@ref), in addition to [`ShareAdd.update`](@ref).
+- Reworked versioned manifest handling ([`ShareAdd.make_current_mnf`](@ref) and [`ShareAdd.update`](@ref)):
+  - Shared environments tidy up generic `Manifest.toml` files (renaming `v1.10+` generic manifests to `Manifest-vX.Y.toml`, removing empty or duplicate files, and sidelining invalid TOML files).
+  - Project environments and workspace roots never delete or rename existing files, only copying older or generic manifests forward.
+  - Added keyword argument `versioned_mnf::Bool=true` to [`ShareAdd.update`](@ref).
+  - [`ShareAdd.info`](@ref) with `version=true` or `upgradable=true` now reads the active manifest without modifying files on disk.
+- [`@usingany`](@ref) and [`ShareAdd.make_importable`](@ref) now throw an error in non-interactive sessions when missing packages would require an interactive installation prompt, and log a clear error if a loaded package's environment was deleted during the session.
+- Raised the Julia compatibility lower bound to `v1.10.8`.
+
+
+### Release 2.9.0
 
 _2026-10-16_
 

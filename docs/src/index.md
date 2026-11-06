@@ -121,7 +121,15 @@ If you call `@usingany SomePackage` from within a workspace sub-project, it will
 
 ## Versioned manifests
 
-If your currently used Julia version supports [versioned manifests](https://pkgdocs.julialang.org/v1/toml-files/#Different-Manifests-for-Different-Julia-versions) (i.e. >= v1.10.8), then on any updates using `ShareAdd` package (see [`ShareAdd.update`](@ref)), a versioned manifest will be created in each updated env. The function [`ShareAdd.make_current_mnf`](@ref) can also be used to create a versioned manifest in a specified environment without updating it.
+When installing packages (via [`@usingany`](@ref), [`@usinghere`](@ref), [`ShareAdd.make_importable`](@ref), or [`ShareAdd.tidyup`](@ref)) or updating environments (via [`ShareAdd.update`](@ref) or `@usingany update_* = true`), `ShareAdd` creates and maintains a [versioned manifest](https://pkgdocs.julialang.org/v1/toml-files/#Different-Manifests-for-Different-Julia-versions) (such as `Manifest-v1.12.toml`) for the running Julia version. To skip versioned manifest handling during updates, pass `versioned_mnf=false` to [`ShareAdd.update`](@ref). You can also call [`ShareAdd.make_current_mnf`](@ref) directly to prepare a versioned manifest in an environment without installing or updating packages.
+
+`ShareAdd` handles environments according to their type:
+
+- **Standard environments** (such as `@v1.12`) are skipped, since they are already specific to a Julia minor version.
+- **Shared environments** (such as `@MyTools`): If no manifest exists for the running Julia version, `ShareAdd` copies the most recent older manifest, or creates a new versioned manifest if none exists. It also tidies up any generic `Manifest.toml`—renaming a manifest created by Julia v1.10 or later to `Manifest-vX.Y.toml`, deleting an empty or duplicate generic manifest, and renaming an invalid TOML file to `Manifest.toml.invalid`.
+- **Project environments** (the active project, a [`@usinghere`](@ref) target directory, or a workspace root): `ShareAdd` never deletes or renames existing files. When it copies a generic `Manifest.toml` forward to `Manifest-vX.Y.toml`, it keeps the original file and logs an informational notice.
+
+If a project file specifies a custom `manifest` entry, if a `JuliaManifest*.toml` file is present, or if a generic and a versioned manifest for the same Julia version conflict, `ShareAdd` leaves existing manifests untouched and emits a warning.
 
 ## `@usingtmp` macro
 

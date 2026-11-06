@@ -37,7 +37,7 @@ The macro can be called with keyword arguments:
 - `update_env::Bool`: first update the shared environments currently in the `LOAD_PATH`
 - `update_all::Bool`: first update ALL shared environments as well as the current project
 
-If Julia version supports versioned manifests, on any updates a versioned manifest will be created in each updated env.
+When installing packages or updating environments, `@usingany` creates or maintains a versioned manifest in each modified environment.
 See also [`make_current_mnf`](@ref) and [`update`](@ref).
 
 If `update_all` or `update_env` kwarg is set, `@usingany` can be called without specifying any package(s) for import. 
@@ -76,8 +76,37 @@ macro usingany(args...)
     update_if_asked(kwargs, packages)
 
     isnothing(expr) && return nothing
-    q = Meta.parse(expr)
-    return q
+    using_expr = Meta.parse(expr)
+    pkg_list = [string(p) for p in packages]
+    q = quote
+        try
+            $(using_expr)
+        catch e
+            $check_loaded_deleted(e, $(pkg_list))
+            rethrow()
+        end
+    end
+    return esc(q)
+end
+
+"""
+    check_loaded_deleted(e, packages) -> Nothing
+
+If `e` is an `ArgumentError` and any package in `packages` is loaded in memory but missing from `LOAD_PATH`,
+log an informative `@error` explaining that the environment was likely deleted in this session.
+"""
+function check_loaded_deleted(e, packages)
+    if e isa ArgumentError
+        for p in packages
+            p_sym = Symbol(p)
+            if isdefined(Main, p_sym) && getproperty(Main, p_sym) isa Module && isnothing(Base.identify_package(String(p)))
+                @error "Package $p is already loaded in memory (and can still be used, e.g. as `$p`), " *
+                       "but its environment was not found in LOAD_PATH (probably deleted in this session). " *
+                       "Restarting Julia should help."
+            end
+        end
+    end
+    return nothing
 end
 
 """
@@ -127,6 +156,8 @@ and adds the missing packages there before importing them.
 The macro can be called with boolean keyword arguments:
 - `all::Bool`: If `true`, all packages passed are added directly to the script's environment, independently of whether they are available elsewhere.
 - `only::Bool`: If `true`, packages already available across shared environments or workspaces are pushed to the LOAD_PATH (similarly to `@usingany`). Only the truly missing packages are installed into the script's environment.
+
+When adding packages, `@usinghere` creates or maintains a versioned manifest in the target environment (see [`make_current_mnf`](@ref)).
 
 This macro is exported.
 """

@@ -1,9 +1,10 @@
 ## Changelog
 
-### Release 2.10.0 (Draft)
+### Release 2.10.0
 
-_unreleased_
+_2026-11-17_
 
+- [`ShareAdd.latest_version`](@ref) was refactored and is public now.
 - Versioned manifests (`Manifest-vX.Y.toml`) are now created and maintained when installing packages via [`@usingany`](@ref), [`@usinghere`](@ref), [`ShareAdd.make_importable`](@ref), and [`ShareAdd.tidyup`](@ref), in addition to [`ShareAdd.update`](@ref).
 - Reworked versioned manifest handling ([`ShareAdd.make_current_mnf`](@ref) and [`ShareAdd.update`](@ref)):
   - Shared environments tidy up generic `Manifest.toml` files (renaming `v1.10+` generic manifests to `Manifest-vX.Y.toml`, removing empty or duplicate files, and sidelining invalid TOML files).

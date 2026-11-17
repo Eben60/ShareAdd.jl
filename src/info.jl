@@ -140,7 +140,9 @@ function info(nms=nothing; by_env=true, listing=nothing, std_lib=false, upgradab
                 sort!(unregistered_pkgs)
                 @info "The following packages are not registered and cannot be checked for updates: $unregistered_pkgs"
             end
-            latest_versions = latest_version(registered_pkgs)
+            latest_versions = Dict{String, VersionNumber}(
+                pkg => v for (pkg, v) in latest_version(registered_pkgs) if !isnothing(v)
+            )
         end
         
         disp_rslt && display_versions_and_upgradable(env_dict, installed_versions, latest_versions, absent, are_env_names)
@@ -195,8 +197,9 @@ function display_versions_and_upgradable(env_dict, installed_versions, latest_ve
             for pkg in pkgs
                 v = get(get(installed_versions, pkg, Dict()), env, nothing)
                 if !isnothing(v)
-                    if !isnothing(latest_versions) && haskey(latest_versions, pkg) && v < latest_versions[pkg]
-                        println("    $pkg: $v --> $(latest_versions[pkg])")
+                    latest_v = isnothing(latest_versions) ? nothing : get(latest_versions, pkg, nothing)
+                    if !isnothing(latest_v) && v < latest_v
+                        println("    $pkg: $v --> $latest_v")
                     else
                         println("    $pkg: $v")
                     end
@@ -240,8 +243,10 @@ function display_upgradable(shared_envs, env_dict, pkg_dict)
         specific_pkgs = intersect(registered_pkgs, pkgs)
         installed_v = pkg_version(env, specific_pkgs)
         for pkg in specific_pkgs
-            if installed_v[pkg] < lastversions[pkg]
-                push!(upgradable_pks, (; pkg, installed=installed_v[pkg], latest=lastversions[pkg]))
+            inst_v = installed_v[pkg]
+            latest_v = lastversions[pkg]
+            if !isnothing(inst_v) && !isnothing(latest_v) && inst_v < latest_v
+                push!(upgradable_pks, (; pkg, installed=inst_v, latest=latest_v))
             end
         end
         if !isempty(upgradable_pks)
@@ -365,28 +370,65 @@ function collect_pkgs(d)
     return pkgs
 end
 
+function _latest_version(reg, entry)
+    info = if applicable(Pkg.Registry.registry_info, reg, entry)
+        Pkg.Registry.registry_info(reg, entry)
+    elseif applicable(Pkg.Registry.registry_info, entry)
+        Pkg.Registry.registry_info(entry)
+    else
+        pkg_ver = pkgversion(Pkg)
+        pkg_ver_str = isnothing(pkg_ver) ? "unknown version" : "v$(pkg_ver)"
+        error(
+            "Cannot query registry metadata for `$(entry.name)` on Julia v$(VERSION) (Pkg $(pkg_ver_str)): " *
+            "expected `Pkg.Registry.registry_info` to accept `($(typeof(reg)), $(typeof(entry)))` or `($(typeof(entry)),)`. " *
+            "Available methods:\n$(methods(Pkg.Registry.registry_info))\n" *
+            "Please update ShareAdd.jl or report this issue."
+        )
+    end
+    versions = keys(info.version_info)
+    return isempty(versions) ? nothing : maximum(versions)
+end
+
+"""
+    latest_version(pkg_name::AbstractString) -> Union{VersionNumber, Nothing}
+    latest_version(pkg_uuid::Base.UUID) -> Union{VersionNumber, Nothing}
+    latest_version(m::Module) -> Union{VersionNumber, Nothing}
+    latest_version(pkgs::AbstractVector) -> Dict{eltype(pkgs), Union{VersionNumber, Nothing}}
+
+Return the latest registered `VersionNumber` of a package from reachable registries, or `nothing` if the package is not found in any registry, has no registered versions, or (for `m::Module`) does not belong to a package with a UUID. If `m` is a submodule, its root module is queried.
+
+When passed an `AbstractVector` of package identifiers (names, UUIDs, or modules), return a dictionary mapping each element to its latest version (or `nothing`).
+
+!!! note
+    This function queries registries via `Pkg.Registry.reachable_registries` and `Pkg.Registry.registry_info`, which are internal `Pkg` APIs (`registry_info` changed its signature from `(entry,)` in Julia ≤1.12 to `(registry, entry)` in Julia 1.13+).
+
+This function is public, not exported.
+"""
+function latest_version(pkg_uuid::Base.UUID)
+    for reg in Pkg.Registry.reachable_registries()
+        entry = get(reg.pkgs, pkg_uuid, nothing)
+        isnothing(entry) || return _latest_version(reg, entry)
+    end
+    return nothing
+end
+
+function latest_version(m::Module)
+    pkgid = Base.PkgId(Base.moduleroot(m))
+    isnothing(pkgid.uuid) && return nothing
+    return latest_version(pkgid.uuid)
+end
+
 function latest_version(pkg_name::AbstractString)
     for reg in Pkg.Registry.reachable_registries()
         for (_, entry) in reg.pkgs
-            if entry.name == pkg_name
-                # Pkg.Registry.registry_info is not public API;
-                # its signature changed from (entry,) in Julia ≤1.12 
-                # to (registry, entry) in Julia 1.13+
-                info = if applicable(Pkg.Registry.registry_info, reg, entry)
-                    Pkg.Registry.registry_info(reg, entry)
-                else
-                    Pkg.Registry.registry_info(entry)
-                end
-                versions = keys(info.version_info)
-                return isempty(versions) ? v"0.0.0" : maximum(versions)
-            end
+            entry.name == pkg_name && return _latest_version(reg, entry)
         end
     end
-    return v"0.0.0"
+    return nothing
 end
 
-function latest_version(pkgs::AbstractVector{<:AbstractString})
-    return Dict(pkg_name => latest_version(pkg_name) for pkg_name in pkgs)
+function latest_version(pkgs::AbstractVector)
+    return Dict{eltype(pkgs), Union{VersionNumber, Nothing}}(pkg => latest_version(pkg) for pkg in pkgs)
 end
 
 function pkg_version(env::EnvInfo, pkgname::AbstractString; manifest = nothing)

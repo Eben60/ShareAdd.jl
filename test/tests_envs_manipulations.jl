@@ -148,6 +148,22 @@ create_project(e2, [fp1, fp2, fp3])
     @test installed_versions["ShareAdd"] == Dict(e4.name => v"2.0.0")
     @test haskey(latest_versions, "ShareAdd") && latest_versions["ShareAdd"] >= v"2.0.0"
 
+    # Test handling of packages where is_registered is true in test mode (Fakeproj*) but latest_version returns nothing
+    info_upgradable_fake = @capture_out begin
+        info(["@$(e1.name)"]; upgradable=true)
+    end
+    @test occursin("All  packages are up to date", info_upgradable_fake)
+
+    (; installed_versions, latest_versions) = info("@$(e1.name)"; version=true, upgradable=true, disp_rslt=false, ret_rslt=true)
+    @test installed_versions["Fakeproj1"] == Dict(e1.name => fp1.version)
+    @test latest_versions isa Dict{String, VersionNumber}
+    @test !haskey(latest_versions, "Fakeproj1")
+
+    info_version_upgradable_fake = @capture_out begin
+        info("@$(e1.name)"; version=true, upgradable=true)
+    end
+    @test occursin("  @$(e1.name)\n    Fakeproj1: $(fp1.version)", info_version_upgradable_fake)
+
     # Test error conditions
     @test_throws ErrorException info(; version=true, by_env=false)
     @test_throws ErrorException info(; version=true, listing=:pkgs)

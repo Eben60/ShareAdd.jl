@@ -25,7 +25,7 @@ ShareAdd.jl helps reduce clutter in the main Julia shared environment and avoids
 - `workspace.jl`: Julia v1.12+ workspace resolution, recursively detecting sibling projects.
 - `update_packages.jl`: Logic for updating packages/environments, versioned manifest planning and normalization (`plan_mnf`, `make_current_mnf`, `with_versioned_mnf`, `active_mnf_path`), and task-local error/notice tracking (`with_update_tracking`).
 - `temporary_envs.jl`: Management and activation of temporary environments.
-- `info.jl`: Functions to display environment state to the user.
+- `info.jl`: Functions to display environment state to the user and query package versions (`info`, `latest_version`).
 - `optimset.jl`: Algorithm to find the optimal set of shared environments to cover required packages.
 - `AbortableTerminalMenu/`: A customized terminal menu module that supports user cancellation.
 
@@ -42,7 +42,7 @@ ShareAdd.jl helps reduce clutter in the main Julia shared environment and avoids
 
 ### Current limitations
    
-- Relies on package names only; UUIDs are currently ignored.
+- Relies primarily on package names; UUIDs are currently ignored in environment management (though `latest_version` accepts `Base.UUID` and `Module` via `Base.PkgId`).
 - Ignores specific branch, version, or source information of packages that might be specified in `Project.toml` or `Manifest.toml`.
 - Unregistered packages cannot be installed via interactive prompts, moved by `tidyup`, or updated by `update` (which warns and skips them).
 
@@ -60,5 +60,5 @@ export SKIPPING, ASKING, FORCING
 ```
 
 **Public (not exported):**
-Functions: `info`, `update`, `delete`, `reset`, `tidyup`, `make_current_mnf`, `make_importable`
-Types: `EnvInfo`, `PackageInfo`
+Functions: `current_env`, `delete`, `info`, `latest_version`, `make_current_mnf`, `make_importable`, `reset`, `sh_add`, `tidyup`, `update`
+Types: `EnvInfo`, `PackageInfo`, `SkipAskForceEnum`

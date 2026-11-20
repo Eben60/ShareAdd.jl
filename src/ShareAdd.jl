@@ -72,7 +72,11 @@ end
 using PrecompileTools: @compile_workload
 include("precompile.jl")
 
-__init__() = cleanup_testenvs()
+function __init__()
+    STDLIB_CACHE[] = nothing
+    cleanup_testenvs()
+    return nothing
+end
 
 
 end # module ShAdd

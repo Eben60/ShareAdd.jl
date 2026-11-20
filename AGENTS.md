@@ -19,7 +19,7 @@ ShareAdd.jl helps reduce clutter in the main Julia shared environment and avoids
 - `types.jl`: Core data structures like `EnvInfo` and `PackageInfo`.
 - `macros.jl`: Implementation of `@usingany`, `@usingtmp`, and `@usinghere` macros, as well as dynamic keyword parsing.
 - `here_envs.jl`: Activation logic (`activate_here`) specific to script-local environments for the `@usinghere` macro.
-- `env_infos.jl`: Functions to query and manage shared environment states and package availability.
+- `env_infos.jl`: Functions to query and manage shared environment states, runtime-cached stdlib discovery (`stdlib_packages`), and package/registry availability (`is_addable`, `_reachable_registries`).
 - `envs_interactive.jl`: Interactive prompts and menus (using `REPL.TerminalMenus`) for managing environments (e.g., `tidyup`, `prompt2install`).
 - `utils_env.jl`: Environment utilities like `delete` and `reset`.
 - `workspace.jl`: Julia v1.12+ workspace resolution, recursively detecting sibling projects.
@@ -42,7 +42,7 @@ ShareAdd.jl helps reduce clutter in the main Julia shared environment and avoids
 
 ### Current limitations
    
-- Relies primarily on package names; UUIDs are currently ignored in environment management (though `latest_version` accepts `Base.UUID` and `Module` via `Base.PkgId`).
+- Relies primarily on package names; UUIDs are currently ignored in environment management (though `latest_version` and `is_addable` accept `Base.UUID` and `Module` via `Base.PkgId`).
 - Ignores specific branch, version, or source information of packages that might be specified in `Project.toml` or `Manifest.toml`.
 - Unregistered packages cannot be installed via interactive prompts, moved by `tidyup`, or updated by `update` (which warns and skips them).
 
@@ -60,5 +60,5 @@ export SKIPPING, ASKING, FORCING
 ```
 
 **Public (not exported):**
-Functions: `current_env`, `delete`, `info`, `latest_version`, `make_current_mnf`, `make_importable`, `reset`, `sh_add`, `tidyup`, `update`
+Functions: `current_env`, `delete`, `info`, `is_addable`, `latest_version`, `make_current_mnf`, `make_importable`, `reset`, `sh_add`, `stdlib_packages`, `tidyup`, `update`
 Types: `EnvInfo`, `PackageInfo`, `SkipAskForceEnum`

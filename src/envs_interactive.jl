@@ -381,7 +381,7 @@ function tidyup_preproc(env::EnvInfo)
         other_pkgs = env.pkgs
     end
 
-    unregistered_pkgs = filter(x -> !is_registered(x), other_pkgs)
+    unregistered_pkgs = filter(x -> !_is_addable(x), other_pkgs)
     setdiff!(other_pkgs, unregistered_pkgs)
 
     inform_unregistered(unregistered_pkgs)

@@ -57,7 +57,7 @@ mutable struct PackageInfo
     is_registered::Union{Bool, Missing}
 end
 
-PackageInfo(name, envs, in_path, in_stdlib) = PackageInfo(name, copy(envs), in_path, in_stdlib, is_registered(name))
+PackageInfo(name, envs, in_path, in_stdlib) = PackageInfo(name, copy(envs), in_path, in_stdlib, _is_addable(name))
 
 """
     struct EnvSet

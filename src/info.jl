@@ -134,7 +134,7 @@ function info(nms=nothing; by_env=true, listing=nothing, std_lib=false, upgradab
         end
         
         if upgradable
-            registered_pkgs = filter(p -> is_registered(p), all_pkgs)
+            registered_pkgs = filter(p -> _is_addable(p), all_pkgs)
             unregistered_pkgs = setdiff(all_pkgs, registered_pkgs)
             if !isempty(unregistered_pkgs)
                 sort!(unregistered_pkgs)
@@ -231,7 +231,7 @@ function display_upgradable(shared_envs, env_dict, pkg_dict)
     all_envs = env_dict |> keys
     all_pkgs = pkg_dict |> keys |> collect
 
-    registered_pkgs = filter(p -> is_registered(p), all_pkgs)
+    registered_pkgs = filter(p -> _is_addable(p), all_pkgs)
     append!(unregistered_pkgs, setdiff(all_pkgs, registered_pkgs))
 
     lastversions = latest_version(registered_pkgs)
@@ -405,7 +405,7 @@ When passed an `AbstractVector` of package identifiers (names, UUIDs, or modules
 This function is public, not exported.
 """
 function latest_version(pkg_uuid::Base.UUID)
-    for reg in Pkg.Registry.reachable_registries()
+    for reg in _reachable_registries()
         entry = get(reg.pkgs, pkg_uuid, nothing)
         isnothing(entry) || return _latest_version(reg, entry)
     end
@@ -419,7 +419,7 @@ function latest_version(m::Module)
 end
 
 function latest_version(pkg_name::AbstractString)
-    for reg in Pkg.Registry.reachable_registries()
+    for reg in _reachable_registries()
         for (_, entry) in reg.pkgs
             entry.name == pkg_name && return _latest_version(reg, entry)
         end

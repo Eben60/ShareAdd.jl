@@ -148,7 +148,7 @@ create_project(e2, [fp1, fp2, fp3])
     @test installed_versions["ShareAdd"] == Dict(e4.name => v"2.0.0")
     @test haskey(latest_versions, "ShareAdd") && latest_versions["ShareAdd"] >= v"2.0.0"
 
-    # Test handling of packages where is_registered is true in test mode (Fakeproj*) but latest_version returns nothing
+    # Test handling of packages where _is_addable is true in test mode (Fakeproj*) but latest_version returns nothing
     info_upgradable_fake = @capture_out begin
         info(["@$(e1.name)"]; upgradable=true)
     end
@@ -304,7 +304,7 @@ end # "update"
 
 # Build a temp env that mixes one real registered package (ShareAdd itself,
 # which is definitely in the General registry) and one unregistered package.
-# "FakeUnregistered" does NOT start with "Fakeproj", so is_registered()
+# "FakeUnregistered" does NOT start with "Fakeproj", so _is_addable()
 # returns false even in test mode.
 shareadd_pkg = (
     name    = "ShareAdd",
@@ -321,9 +321,9 @@ e5 = make_tmp_env(envs_folder)
 create_project(e5, [shareadd_pkg, unreg_pkg])
 
 @testset "unregistered packages" begin
-    using ShareAdd: update, info, is_registered
+    using ShareAdd: update, info, is_addable
 
-    @test !is_registered("FakeUnregistered")
+    @test !is_addable("FakeUnregistered")
 
     # info(; upgradable=true) must NOT throw even when the env contains
     # an unregistered package, and must emit @info about it.

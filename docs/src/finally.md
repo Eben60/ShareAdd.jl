@@ -1,5 +1,13 @@
 ## Changelog
 
+### Release 2.11.0
+
+_2026-11-20_
+
+- Added public function [`ShareAdd.is_addable`](@ref) and made [`ShareAdd.stdlib_packages`](@ref) public
+- Internal improvements for efficiency and error catching.
+
+
 ### Release 2.10.0
 
 _2026-11-17_

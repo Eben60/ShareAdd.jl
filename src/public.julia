@@ -1,2 +1,2 @@
-public current_env, delete, info, latest_version, make_current_mnf, make_importable, reset, sh_add, tidyup, update, EnvInfo, PackageInfo, SkipAskForceEnum
+public current_env, delete, info, is_addable, latest_version, make_current_mnf, make_importable, reset, sh_add, stdlib_packages, tidyup, update, EnvInfo, PackageInfo, SkipAskForceEnum
 

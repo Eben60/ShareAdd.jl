@@ -169,16 +169,56 @@ function shared_packages(env_name; depot = first(DEPOT_PATH), skipfirstchar = tr
     return list_env_pkgs(p)
 end
 
-# list packages in the standard environment @stdlib
+const STDLIB_CACHE = Ref{Union{Nothing, @NamedTuple{names::Set{String}, uuids::Set{Base.UUID}}}}(nothing)
+
+function _stdlib_cache()
+    cached = STDLIB_CACHE[]
+    isnothing(cached) || return cached
+
+    names = Set{String}()
+    uuids = Set{Base.UUID}()
+    for s in readdir(Sys.STDLIB)
+        endswith(s, "_jll") && continue
+        dir = joinpath(Sys.STDLIB, s)
+        isdir(dir) || continue
+        push!(names, s)
+        pf = _locate_project_file(dir)
+        isnothing(pf) && continue
+        d = TOML.tryparsefile(pf)
+        d isa TOML.ParserError && continue
+        uuid_str = get(d, "uuid", nothing)
+        uuid = uuid_str isa AbstractString ? tryparse(Base.UUID, uuid_str) : nothing
+        isnothing(uuid) || push!(uuids, uuid)
+    end
+    result = (; names, uuids)
+    STDLIB_CACHE[] = result
+    return result
+end
+
+"""
+    stdlib_packages() -> Vector{String}
+
+Return a sorted list of standard library package names available in `Sys.STDLIB`,
+excluding `*_jll` artifact wrapper packages.
+
+This function is public, not exported.
+"""
 function stdlib_packages()
-    pkg_dirlist = readdir(Sys.STDLIB) 
-    pkgs = [s for s in pkg_dirlist if isdir(joinpath(Sys.STDLIB, s)) && !endswith(s, "_jll")]
-    return pkgs
+    return sort!(collect(_stdlib_cache().names))
 end
 
 function stdlib_env()
-    pkgs = stdlib_packages() |> Set
-    env = EnvInfo(; name = "stdlib", path = Sys.STDLIB, pkgs, in_path = true, standard_env = true, shared = true, temporary = false, active_project = false)
+    pkgs = copy(_stdlib_cache().names)
+    env = EnvInfo(;
+        name = "stdlib",
+        path = Sys.STDLIB,
+        pkgs,
+        in_path = true,
+        standard_env = true,
+        shared = true,
+        temporary = false,
+        active_project = false,
+    )
     return env
 end
 
@@ -275,8 +315,37 @@ function current_env(; depot = first(DEPOT_PATH))
     error("This code section should never be executed")    
 end
 
-function is_in_registry(pkname, reg=nothing)
-    isnothing(reg) && (reg = Pkg.Registry.reachable_registries()[1])
+function _reachable_registries()
+    if isdefined(Pkg, :Registry) && isdefined(Pkg.Registry, :reachable_registries) && applicable(Pkg.Registry.reachable_registries)
+        try
+            return Pkg.Registry.reachable_registries()
+        catch e
+            e isa InterruptException && rethrow()
+            pkg_ver = pkgversion(Pkg)
+            pkg_ver_str = isnothing(pkg_ver) ? "unknown version" : "v$(pkg_ver)"
+            error(
+                "Failed to query reachable registries via Pks's internal `Pkg.Registry.reachable_registries()` on Julia v$(VERSION) (Pkg $(pkg_ver_str)): " *
+                "$(sprint(showerror, e)). " *
+                "If this followed a Julia/Pkg update, please update ShareAdd.jl or report this issue."
+            )
+        end
+    else
+        pkg_ver = pkgversion(Pkg)
+        pkg_ver_str = isnothing(pkg_ver) ? "unknown version" : "v$(pkg_ver)"
+        error(
+            "Cannot query reachable registries on Julia v$(VERSION) (Pkg $(pkg_ver_str)): " *
+            "internal function `Pkg.Registry.reachable_registries()` is unavailable or changed signature. " *
+            "Please update ShareAdd.jl or report this issue."
+        )
+    end
+end
+
+function is_in_registry(pkname, reg = nothing)
+    if isnothing(reg)
+        regs = _reachable_registries()
+        isempty(regs) && return false
+        reg = regs[1]
+    end
     pkgs = reg.pkgs
     for (_, pkg) in pkgs
         pkg.name == pkname && return true
@@ -284,8 +353,8 @@ function is_in_registry(pkname, reg=nothing)
     return false
 end
 
-function is_in_registries(pkg_name)
-    registries = Pkg.Registry.reachable_registries() 
+function is_in_registries(pkg_name::AbstractString)
+    registries = _reachable_registries()
     for reg in registries
         if is_in_registry(pkg_name, reg)
             return true
@@ -294,7 +363,52 @@ function is_in_registries(pkg_name)
     return false
 end
 
-is_registered(name; is_testing=IS_TESTING[]) = (is_testing && startswith(name, "Fakeproj")) || is_in_registries(name) || (name in stdlib_env().pkgs)
+function is_in_registries(pkg_uuid::Base.UUID)
+    for reg in _reachable_registries()
+        haskey(reg.pkgs, pkg_uuid) && return true
+    end
+    return false
+end
+
+"""
+    is_addable(pkg_name::AbstractString; include_stdlib::Bool = true) -> Bool
+    is_addable(pkg_uuid::Base.UUID; include_stdlib::Bool = true) -> Bool
+    is_addable(m::Module; include_stdlib::Bool = true) -> Bool
+
+Check whether a package can be added to an environment by name or UUID from reachable
+registries, or (when `include_stdlib = true`) from Julia's standard library (`Sys.STDLIB`,
+excluding `*_jll` artifact wrappers).
+
+For a `Module`, `m` is queried via its `Base.PkgId` UUID; returns `false` for submodules
+(where `Base.moduleroot(m) !== m`) and non-package modules such as `Main` or anonymous modules.
+
+Set `include_stdlib = false` to check reachable registries only (consistent with
+[`latest_version`](@ref)).
+
+!!! note
+    This function queries registries via `Pkg.Registry.reachable_registries`, which is an
+    internal `Pkg` API.
+
+This function is public, not exported.
+"""
+function is_addable(pkg_name::AbstractString; include_stdlib = true)
+    return is_in_registries(pkg_name) || (include_stdlib && pkg_name in _stdlib_cache().names)
+end
+
+function is_addable(pkg_uuid::Base.UUID; include_stdlib = true)
+    return is_in_registries(pkg_uuid) || (include_stdlib && pkg_uuid in _stdlib_cache().uuids)
+end
+
+function is_addable(m::Module; include_stdlib = true)
+    Base.moduleroot(m) === m || return false
+    pkgid = Base.PkgId(m)
+    isnothing(pkgid.uuid) && return false
+    return is_addable(pkgid.uuid; include_stdlib)
+end
+
+function _is_addable(name)
+    return (IS_TESTING[] && startswith(name, "Fakeproj")) || is_addable(name)
+end
 
 function package_loaded(p)
     p_sym = Symbol(p)

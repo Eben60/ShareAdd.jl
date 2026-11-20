@@ -25,7 +25,25 @@ This is the only place where this internal function is called.
 function active_mnf_path(env_dir)
     prj = _locate_project_file(env_dir)
     isnothing(prj) && return nothing
-    return Base.project_file_manifest_path(String(abspath(prj)))
+    prj_path = String(abspath(prj))
+    if isdefined(Base, :project_file_manifest_path) && applicable(Base.project_file_manifest_path, prj_path)
+        try
+            return Base.project_file_manifest_path(prj_path)
+        catch e
+            e isa InterruptException && rethrow()
+            error(
+                "Failed to resolve manifest path via Julia's internal `Base.project_file_manifest_path` on Julia v$(VERSION): " *
+                "$(sprint(showerror, e)). " *
+                "If this followed a Julia update, please update ShareAdd.jl or report this issue."
+            )
+        end
+    else
+        error(
+            "Cannot resolve manifest path on Julia v$(VERSION): " *
+            "internal function `Base.project_file_manifest_path(::String)` is unavailable or changed signature. " *
+            "Please update ShareAdd.jl or report this issue."
+        )
+    end
 end
 
 """
@@ -536,7 +554,7 @@ function update(env::EnvInfo, pkgs::Union{Nothing,AbstractString,Vector{<:Abstra
         end
 
         # Warn about unregistered packages
-        unreg = filter(p -> !is_registered(p), collect(updatable_pkgs))
+        unreg = filter(p -> !_is_addable(p), collect(updatable_pkgs))
         if !isempty(unreg)
             sort!(unreg)
             @warn "The following packages in @$(env.name) are not registered and cannot be updated by this function: $unreg"
